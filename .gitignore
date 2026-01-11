@@ -6,5 +6,6 @@ dist/
 wheels/
 *.egg-info
 
+chromadb_storage
 # Virtual environments
 .venv
