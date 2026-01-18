@@ -2,7 +2,7 @@ import textwrap
 import chromadb
 import numpy as np
 import pandas as pd
-from data.input import filter_and_calculate_mean_loja, get_product_descriptions
+from utils.input import filter_and_calculate_mean_loja, get_product_descriptions
 from chromadb import Documents,Embeddings
 from my_embeddings import GeminiEmbeddingFunction
 
