@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Ctrl+A Parser com SheetJS</title>
+    <script src="../js/vendor/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .instructions {
+            background: #fff; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        #status { color: #666; font-style: italic; margin-top: 10px; }
+        pre { background: #2d2d2d; color: #a9b7c6; padding: 15px; border-radius: 5px; overflow: auto; max-height: 500px; }
+    </style>
+</head>
+<body>
+
+    <div class="instructions">
+        <h2>Passo a Passo:</h2>
+        <ol>
+            <li>Vá ao site da secretaria e abra uma pesquisa de mercado.</li>
+            <li>Dê <b>Ctrl + A</b> (selecionar tudo) e <b>Ctrl + C</b>.</li>
+            <li>Clique nesta página e dê <b>Ctrl + V</b>.</li>
+        </ol>
+        <div id="status">Aguardando colagem...</div>
+    </div>
+
+    <h3>Dados Extraídos (Da maior tabela encontrada):</h3>
+    <pre id="output">{}</pre>
+
+    <script src="../js/home.js"></script>
+
+</body>
+</html>
