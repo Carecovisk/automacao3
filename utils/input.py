@@ -4,11 +4,10 @@ def get_product_descriptions(pesquisa_path : str) -> pd.DataFrame:
 
     df_pesquisa = pd.read_excel(pesquisa_path, skiprows=16, sheet_name='Planilha1')
 
-    if 'DESCRIÇÃO' in df_pesquisa.columns:
-        return df_pesquisa[['DESCRIÇÃO']].dropna().drop_duplicates().reset_index(drop=True)
+    if 'DESCRIÇÃO' not in df_pesquisa.columns:
+        raise KeyError("Coluna 'DESCRIÇÃO' não encontrada no DataFrame.")
 
-    raise KeyError("Coluna 'DESCRIÇÃO' não encontrada no DataFrame.")
-
+    return df_pesquisa[['DESCRIÇÃO']].dropna().drop_duplicates().reset_index(drop=True)
 
 def filter_and_calculate_mean_loja(file_path : str, description_filter=None, sheet_name=None) -> pd.DataFrame:
     """
