@@ -58,7 +58,7 @@ for idx, row in df_descricoes_pesquisa.iterrows():
 
 print("Getting candidates from LLM...")
 # Call get_candidates and write results to CSV as they come
-with open('candidates_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
+with open('./data/output/candidates_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
     fieldnames = ['id','item', 'candidate', 'confidence']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
@@ -68,40 +68,8 @@ with open('candidates_results.csv', 'w', newline='', encoding='utf-8') as csvfil
             writer.writerow({
                 'id': result.prompt.id,
                 'item': result.prompt.item_description,
-                'candidate': candidate.item_description,
+                'candidate': candidate.description,
                 'confidence': candidate.confidence
             })
         print('Rows written for item:', result.prompt.item_description)
         csvfile.flush()  # Flush after each batch to ensure data is written
-
-
-# def make_prompt(query, relevant_passage):
-#   escaped = relevant_passage.replace("'", "").replace('"', "").replace("\n", " ")
-#   prompt = ("""
-#     You are a helpful and informative bot that answers questions using
-#     text from the reference passage included below.
-#     Be sure to respond in a complete sentence, being comprehensive,
-#     including all relevant background information.
-#     However, you are talking to a non-technical audience, so be sure to
-#     break down complicated concepts and strike a friendly
-#     and converstional tone. If the passage is irrelevant to the answer,
-#     you may ignore it.
-#     QUESTION: '{query}'
-#     PASSAGE: '{relevant_passage}'
-
-#     ANSWER:
-#   """).format(query=query, relevant_passage=escaped)
-
-#   return prompt
-
-# query = "How do you use the touchscreen in the Google car?"
-# prompt = make_prompt(query, passage)
-# print(prompt)
-
-
-# MODEL_ID = "gemini-2.5-flash" # @param ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-preview", "gemini-3-pro-preview"] {"allow-input":true, isTemplate: true}
-# answer = client.models.generate_content(
-#     model = MODEL_ID,
-#     contents = prompt
-# )
-# print("Answer:", answer.text)
