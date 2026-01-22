@@ -35,7 +35,7 @@ class PromptResult:
   candidates: list['Candidate']
 
 def get_candidates(prompts: list[PesquisaPrompt], provider : str) -> Generator[PromptResult, None, None]:
-  """Fetch candidates using Gemini Batch API (50% cost reduction)."""
+  """Fetch candidates from the specified provider."""
   if provider == 'gemini':
     from models.gemini import get_candidates_gemini
     yield from get_candidates_gemini(prompts)
