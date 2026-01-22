@@ -23,7 +23,10 @@ def filter_and_calculate_mean_loja(file_path : str, description_filter=None, she
     df = pd.read_excel(file_path, skiprows=4, sheet_name=sheet_name)
     
     # 2. Filtrar as linhas onde 'descr_compl' contém a palavra "PNEU"
-    df_pneu = df[df['descr_compl'].str.contains(description_filter, case=False, na=False)].copy()
+    if description_filter:
+        df_pneu = df[df['descr_compl'].str.contains(description_filter, case=False, na=False)].copy()
+    else:
+        df_pneu = df.copy()
 
     # 3. Criar o dataframe com as médias dos valores de cada produto
     df_medias = df_pneu.groupby('descr_compl').agg({
