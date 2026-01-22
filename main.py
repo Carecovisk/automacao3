@@ -30,10 +30,10 @@ def create_chroma_db(documents, name) -> chromadb.Collection:
         # embedding_function=GeminiEmbeddingFunction()
     )
 
-    # db.upsert(
-    #     documents=documents,
-    #     ids=[hashlib.md5(doc.encode()).hexdigest() for doc in documents]
-    # )
+    db.upsert(
+        documents=documents,
+        ids=[hashlib.md5(doc.encode()).hexdigest() for doc in documents]
+    )
     return db
 
 # Set up the DB
