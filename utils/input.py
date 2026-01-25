@@ -1,6 +1,6 @@
 import pandas as pd
 
-def get_product_descriptions(pesquisa_path : str) -> pd.DataFrame:
+def get_pesquisa(pesquisa_path : str) -> pd.DataFrame:
 
     df_pesquisa = pd.read_excel(pesquisa_path, skiprows=16, sheet_name='Planilha1')
 
@@ -9,7 +9,7 @@ def get_product_descriptions(pesquisa_path : str) -> pd.DataFrame:
 
     return df_pesquisa[['DESCRIÇÃO']].dropna().drop_duplicates().reset_index(drop=True)
 
-def filter_and_calculate_mean_loja(file_path : str, description_filter=None, sheet_name=None) -> pd.DataFrame:
+def get_notas_fiscais(file_path : str, description_filter=None, sheet_name=None) -> pd.DataFrame:
     """
     Filter rows containing 'PNEU' and calculate weighted average prices.
     
@@ -42,5 +42,5 @@ def filter_and_calculate_mean_loja(file_path : str, description_filter=None, she
 
 if __name__ == "__main__":
     # Exemplo de uso
-    df_loja = get_product_descriptions('./data/pesquisa.xlsx')
+    df_loja = get_pesquisa('./data/pesquisa.xlsx')
     print(df_loja.head())

@@ -1,6 +1,7 @@
 from google import genai
 from google.genai import types
 from chromadb import EmbeddingFunction, Documents, Embeddings
+from chromadb.utils import embedding_functions
 
 client = genai.Client()
 
@@ -26,3 +27,9 @@ class GeminiEmbeddingFunction(EmbeddingFunction):
       all_embeddings.extend([embedding.values for embedding in response.embeddings])
     
     return all_embeddings
+
+
+embedding_model_name = "BAAI/bge-m3"
+emb_fn_bge_m3 = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name=embedding_model_name
+)
