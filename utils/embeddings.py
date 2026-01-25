@@ -3,9 +3,12 @@ from google.genai import types
 from chromadb import EmbeddingFunction, Documents, Embeddings
 from chromadb.utils import embedding_functions
 
-client = genai.Client()
+
 
 class GeminiEmbeddingFunction(EmbeddingFunction):
+
+  client = genai.Client()
+
   def __call__(self, input: Documents) -> Embeddings:
     EMBEDDING_MODEL_ID = "gemini-embedding-001"
     title = "Custom query"
@@ -16,7 +19,7 @@ class GeminiEmbeddingFunction(EmbeddingFunction):
     for i in range(0, len(input), batch_size):
       print(f"Processing batch {i // batch_size + 1}...")
       batch = input[i:i + batch_size]
-      response = client.models.embed_content(
+      response = self.client.models.embed_content(
           model=EMBEDDING_MODEL_ID,
           contents=batch,
           config=types.EmbedContentConfig(
@@ -29,7 +32,6 @@ class GeminiEmbeddingFunction(EmbeddingFunction):
     return all_embeddings
 
 
-embedding_model_name = "BAAI/bge-m3"
 emb_fn_bge_m3 = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name=embedding_model_name
+    model_name="BAAI/bge-m3"
 )
