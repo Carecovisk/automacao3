@@ -27,7 +27,7 @@ def rerank_items(queries: list[str], items_list: list[list[PesquisaPrompt.Item]]
         
         # Update items with reranker scores and sort
         items_with_scores = [
-            PesquisaPrompt.Item(description=item.description, distance=item.distance, score=score)
+            PesquisaPrompt.Item(description=item.description, distance=item.distance, score=float(score))
             for item, score in zip(items, scores)
         ]
         ranked = sorted(items_with_scores, key=lambda x: x.score, reverse=True)

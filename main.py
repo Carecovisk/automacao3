@@ -2,11 +2,10 @@ import csv
 import hashlib
 from pathlib import Path
 import chromadb
-import sqlite3
 import pandas as pd
 from utils.ai import PesquisaPrompt, get_candidates
 from utils.input import get_notas_fiscais, get_pesquisa
-from utils.db import init_sqlite_db, store_query_results
+from utils.db import QueryResultsDB
 from utils.reranker import rerank_items, filter_items_by_score
 from utils.embeddings import emb_fn_bge_m3
 
@@ -46,18 +45,14 @@ def filter_by_distance(docs: list[str], distances: list[float], threshold: float
     
     return filtered_items
 
-def get_relevant_results(queries: list[str], db: chromadb.Collection, sqlite_conn: sqlite3.Connection, n_results = 5) -> list[list[PesquisaPrompt.Item]]:
+def get_relevant_results(queries: list[str], db: chromadb.Collection, n_results = 5) -> list[list[PesquisaPrompt.Item]]:
     results = db.query(query_texts=queries, n_results=n_results)
     docs = results.get('documents') or []
     distances = results.get('distances') or []
     
     filtered_docs_list = []
     
-    for i, (doc_list, dist_list) in enumerate(zip(docs, distances)):
-        query_text = queries[i]
-
-        store_query_results(sqlite_conn, query_text, doc_list, dist_list)
-        
+    for doc_list, dist_list in zip(docs, distances):
         # Filter documents by distance threshold
         filtered_docs = filter_by_distance(doc_list, dist_list)
         filtered_docs_list.append(filtered_docs)
@@ -65,10 +60,10 @@ def get_relevant_results(queries: list[str], db: chromadb.Collection, sqlite_con
     return filtered_docs_list
 
 
-def build_prompts(descricoes_pesquisa : list[str], all_relevant_docs : list[list[PesquisaPrompt.Item]]) -> list[PesquisaPrompt]:
+def build_prompts(descricoes_pesquisa : list[str], relevant_results : list[list[PesquisaPrompt.Item]]) -> list[PesquisaPrompt]:
     prompts = []
     for position, description in enumerate(descricoes_pesquisa):
-        relevant_docs = all_relevant_docs[position]
+        relevant_docs = relevant_results[position]
         if relevant_docs:
             prompt = PesquisaPrompt(
                 id=position + 1,
@@ -121,11 +116,10 @@ def main():
 
     # Initialize SQLite database
     print("Initializing SQLite database...")
-    sqlite_conn = init_sqlite_db()
 
 
     print("Querying relevant documents from ChromaDB...")
-    relevant_results = get_relevant_results(descricoes_pesquisa, db, sqlite_conn, n_results=10)
+    relevant_results = get_relevant_results(descricoes_pesquisa, db, n_results=10)
 
     if not relevant_results:
         raise ValueError("No relevant documents found for the given descriptions.")
@@ -139,8 +133,9 @@ def main():
 
     print_prompts_to_file(prompts, OUTPUT_PATH / 'prompts_output.txt')
 
-    # Close SQLite connection when done
-    sqlite_conn.close()
+    db_path = OUTPUT_PATH / 'query_results.db'
+    with QueryResultsDB(db_path) as query_db:
+        query_db.store_prompts(prompts)
 
     # print("Getting candidates from LLM...")
     # # Call get_candidates and write results to CSV as they come
