@@ -6,8 +6,10 @@ import pandas as pd
 from utils.ai import PesquisaPrompt, get_candidates
 from utils.input import get_notas_fiscais, get_pesquisa
 from utils.db import QueryResultsDB
+from utils.preprocesssing import apply_replacements, fetch_replacements_from_llm
 from utils.reranker import rerank_items, filter_items_by_score
 from utils.embeddings import emb_fn_bge_m3
+from typing import Callable
 
 OUTPUT_PATH = Path('./data/output')
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
@@ -74,22 +76,26 @@ def build_prompts(descricoes_pesquisa : list[str], relevant_results : list[list[
     return prompts
 
 
-def print_prompts_to_file(prompts: list[PesquisaPrompt], path_output: Path) -> None:
-    """Print a list of PesquisaPrompt objects with their details."""
+def write_with_stdout_redirect(path_output: Path, writer: Callable) -> None:
     import sys
     original_stdout = sys.stdout
-
     with open(path_output, 'w', encoding='utf-8') as f:
         sys.stdout = f
-        for idx, prompt in enumerate(prompts, start=1):
-            print(f"\n--- Prompt {idx} ---")
-            print(f"ID: {prompt.id}")
-            print(f"Description: {prompt.item_description}")
-            print(f"Items ({len(prompt.items)}):")
-            for item in prompt.items:
-                print(f"  - {item.description} (Distance: {item.distance}) (Score: {item.score})")
-
+        writer()
     sys.stdout = original_stdout
+
+def print_prompts(prompts: list[PesquisaPrompt]) -> None:
+    for idx, prompt in enumerate(prompts, start=1):
+        print(f"\n--- Prompt {idx} ---")
+        print(f"ID: {prompt.id}")
+        print(f"Description: {prompt.item_description}")
+        print(f"Items ({len(prompt.items)}):")
+        for item in prompt.items:
+            print(f"  - {item.description} (Distance: {item.distance}) (Score: {item.score})")
+
+def print_replaced_descricoes(descricoes: list[str]) -> None:
+    for idx, descr in enumerate(descricoes, start=1):
+        print(f"{idx}. {descr}")
 
 def get_descricoes_notas(df_notas_fiscais: pd.DataFrame) -> list[str]:
     """Extract 'descr_compl' column from DataFrame as a list of strings."""
@@ -110,13 +116,25 @@ def main():
     )
     descricoes_notas = get_descricoes_notas(df_notas_fiscais)
 
+    print("Fetching replacements from LLM...")
+    replacements = fetch_replacements_from_llm(
+        descricoes_notas,
+        context="SUBGRUPO: Pneus para motociletas."
+    )
+
+    print("Replacements fetched:", "\n".join([f"{r.regex} -> {r.replacement}" for r in replacements]))
+
+    print("Applying replacements to notas fiscais descriptions...")
+    descricoes_notas = apply_replacements(descricoes_notas, replacements)
+
+    write_with_stdout_redirect(
+        OUTPUT_PATH / 'descricoes_replaced.txt',
+        lambda: print_replaced_descricoes(descricoes_notas)
+    )
+
     # Set up the DB
     print("Creating ChromaDB...")
     db = create_chroma_db(descricoes_notas, "pesquisa_products")
-
-    # Initialize SQLite database
-    print("Initializing SQLite database...")
-
 
     print("Querying relevant documents from ChromaDB...")
     relevant_results = get_relevant_results(descricoes_pesquisa, db, n_results=10)
@@ -131,7 +149,7 @@ def main():
     print("Building prompts...")
     prompts = build_prompts(descricoes_pesquisa, relevant_results)
 
-    print_prompts_to_file(prompts, OUTPUT_PATH / 'prompts_output.txt')
+    write_with_stdout_redirect(OUTPUT_PATH / 'prompts_output.txt', lambda: print_prompts(prompts))
 
     db_path = OUTPUT_PATH / 'query_results.db'
     with QueryResultsDB(db_path) as query_db:
@@ -140,7 +158,7 @@ def main():
     # print("Getting candidates from LLM...")
     # # Call get_candidates and write results to CSV as they come
     # with open(OUTPUT_PATH / 'candidates_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
-    #     fieldnames = ['id','item', 'candidate', 'rank']
+    #     fieldnames = ['id','item', 'candidate', 'rank'
     #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     #     writer.writeheader()
         
