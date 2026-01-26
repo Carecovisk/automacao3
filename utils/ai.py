@@ -1,11 +1,21 @@
 from collections.abc import Generator
 from dataclasses import dataclass
+import json
 from typing import Hashable
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 @dataclass
-class PesquisaPrompt:
+class BasePrompt:
   id: Hashable
+
+  class PromptResult(BaseModel):
+    pass
+
+  def build(self) -> str:
+    raise NotImplementedError("Subclasses must implement build method")
+
+@dataclass
+class PesquisaPrompt(BasePrompt):
   item_description: str
   items: list['PesquisaPrompt.Item']
   limit: int = 3

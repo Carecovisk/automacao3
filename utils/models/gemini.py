@@ -5,24 +5,23 @@ from google import genai
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
-from ai import PesquisaPrompt, PromptResult, Candidates
+from ai import BasePrompt, PesquisaPrompt, PromptResult, Candidates
 
 client = genai.Client()
 
-def fetch_candidates_gemini(prompt: PesquisaPrompt) -> PromptResult:
-  """Fetch candidates using Google Gemini API."""
+def make_prompt(prompt: BasePrompt) -> BasePrompt.PromptResult:
+  """Make a single prompt request to Gemini API and return the structured result."""
   
   response = client.models.generate_content(
     model="gemini-2.5-flash",
     contents=prompt.build(),
     config={
         "response_mime_type": "application/json",
-        "response_json_schema": Candidates.model_json_schema(),
+        "response_json_schema": prompt.PromptResult.model_json_schema(),
     },
   )
-  candidates = Candidates.model_validate_json(response.text)
-  print(f"Received {len(candidates.candidates)} candidates for prompt ID {prompt.id}")
-  return PromptResult(prompt=prompt, candidates=candidates.candidates)
+  result = prompt.PromptResult.model_validate_json(response.text)
+  return result
 
 def _build_batch_request(prompt: PesquisaPrompt) -> dict:
   """Build a single batch request for Gemini API."""
