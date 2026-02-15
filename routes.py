@@ -2,8 +2,14 @@ from typing import Any, List
 
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 router = APIRouter()
+
+
+class DataConfirmation(BaseModel):
+    data: list
+    description: str
 
 
 # Rota para acessar a página inicial
@@ -12,23 +18,18 @@ async def read_index():
     return FileResponse("static/html/home.html")
 
 
-# Rota API para receber os dados
-# Aceita uma lista de listas (matriz) ou lista de objetos, dependendo de como o JS enviar
-@router.post("/api/salvar-tabela")
-async def receber_tabela(dados: List[List[Any]]):
+# Rota para confirmar e processar dados
+@router.post("/api/confirm-data")
+async def confirm_data(payload: DataConfirmation):
     """
-    Recebe o JSON já parseado pelo frontend.
-    Exemplo de entrada: [ ["Nome", "Idade"], ["João", 30], ["Maria", 25] ]
+    Recebe os dados extraídos e a descrição para processamento.
     """
-    print(f"Recebidas {len(dados)} linhas de dados.")
-
-    # Exemplo: Imprimindo a primeira linha (cabeçalho) e a primeira linha de dados
-    if dados:
-        print("Cabeçalho:", dados[0])
-
-    # AQUI VOCÊ COLOCA SUA LÓGICA (Salvar no banco, criar CSV, processar regras)
-
+    # TODO: Adicionar lógica de processamento dos dados
+    header = payload.data[0][:-1] + payload.data[1][4:]
     return {
-        "status": "sucesso",
-        "mensagem": f"{len(dados)} linhas processadas com sucesso.",
+        "status": "success",
+        "message": "Dados recebidos com sucesso",
+        "rows_count": len(payload.data),
+        "header": header
     }
+
