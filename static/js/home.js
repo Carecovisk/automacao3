@@ -39,7 +39,7 @@ document.addEventListener('paste', function (e) {
     // 7. Store data and show confirm button
     currentData = jsonData;
     currentDescription = description;
-    document.getElementById('confirmBtn').style.display = 'block';
+    document.getElementById('confirmBtn').classList.remove('hidden');
 
 });
 
@@ -63,8 +63,10 @@ document.getElementById('confirmBtn').addEventListener('click', async function()
         });
 
         if (response.ok) {
-            alert('Dados enviados com sucesso!');
-            console.log('Resposta do servidor:', await response.json());
+            const result = await response.json();
+            alert('Dados confirmados e enviados com sucesso!');
+            console.log('Resposta do servidor:', result);
+            window.location.href = '/upload';
         } else {
             alert('Erro ao enviar dados: ' + response.statusText);
         }

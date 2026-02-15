@@ -280,20 +280,20 @@ def process_queries(
         )
 
     # Yield high confidence results first
-    yield high_confidence
+    return high_confidence
 
-    # Process low confidence queries with LLM
-    if low_confidence[0]:  # If there are low confidence queries
-        print(
-            f"Processing {len(low_confidence[0])} low confidence queries with {provider}..."
-        )
-        for processed_queries, processed_results in get_candidates(
-            *low_confidence, provider=provider
-        ):
-            print(f"Processed {len(processed_queries)} queries through LLM")
-            yield (processed_queries, processed_results)
-    else:
-        print("No low confidence queries to process")
+    # # Process low confidence queries with LLM
+    # if low_confidence[0]:  # If there are low confidence queries
+    #     print(
+    #         f"Processing {len(low_confidence[0])} low confidence queries with {provider}..."
+    #     )
+    #     for processed_queries, processed_results in get_candidates(
+    #         *low_confidence, provider=provider
+    #     ):
+    #         print(f"Processed {len(processed_queries)} queries through LLM")
+    #         yield (processed_queries, processed_results)
+    # else:
+    #     print("No low confidence queries to process")
 
 
 def main():
