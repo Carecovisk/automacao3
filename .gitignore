@@ -10,3 +10,4 @@ data/output/*
 # Virtual environments
 .venv
 .DS_Store
+cache/*

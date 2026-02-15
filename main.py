@@ -6,7 +6,7 @@ import pandas as pd
 from utils.ai import PesquisaPrompt, get_candidates
 from utils.input import get_notas_fiscais, get_pesquisa
 from utils.db import QueryResultsDB
-from utils.preprocesssing import apply_replacements, fetch_replacements_from_llm
+from utils.preprocesssing import apply_replacements, get_replacements_from_llm
 from utils.reranker import filter_items_by_score_gap, rerank_items, filter_items_by_score
 from utils.embeddings import emb_fn_bge_m3
 from typing import Callable
@@ -116,13 +116,12 @@ def main():
     )
     descricoes_notas = get_descricoes_notas(df_notas_fiscais)
 
-    print("Fetching replacements from LLM...")
-    replacements = fetch_replacements_from_llm(
+    replacements = get_replacements_from_llm(
         descricoes_notas,
         context="SUBGRUPO: Pneus para motociletas."
     )
 
-    print("Replacements fetched:", "\n".join([f"{r.regex} -> {r.replacement}" for r in replacements]))
+    print("Replacements:", "\n".join([f"{r.regex} -> {r.replacement}" for r in replacements]))
 
     print("Applying replacements to notas fiscais descriptions...")
     descricoes_notas = apply_replacements(descricoes_notas, replacements)
