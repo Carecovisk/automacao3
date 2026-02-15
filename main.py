@@ -7,7 +7,7 @@ from utils.ai import PesquisaPrompt, get_candidates
 from utils.input import get_notas_fiscais, get_pesquisa
 from utils.db import QueryResultsDB
 from utils.preprocesssing import apply_replacements, fetch_replacements_from_llm
-from utils.reranker import rerank_items, filter_items_by_score
+from utils.reranker import filter_items_by_score_gap, rerank_items, filter_items_by_score
 from utils.embeddings import emb_fn_bge_m3
 from typing import Callable
 
@@ -144,7 +144,8 @@ def main():
 
     print("Reranking results...")
     reranked = rerank_items(descricoes_pesquisa, relevant_results)
-    relevant_results = filter_items_by_score(reranked, threshold=0.5)
+    relevant_results = filter_items_by_score(reranked, threshold=0.8)
+    relevant_results = filter_items_by_score_gap(relevant_results, gap_threshold=0.1)
 
     print("Building prompts...")
     prompts = build_prompts(descricoes_pesquisa, relevant_results)

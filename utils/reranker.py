@@ -50,3 +50,29 @@ def filter_items_by_score(items_list: list[list[PesquisaPrompt.Item]], threshold
         [item for item in items if item.score >= threshold]
         for items in items_list
     ]
+
+def filter_items_by_score_gap(items_list: list[list[PesquisaPrompt.Item]], gap_threshold: float = 0.1) -> list[list[PesquisaPrompt.Item]]:
+    """Filter PesquisaPrompt.Item objects by score gap threshold.
+    
+    Args:
+        items_list: List of lists containing PesquisaPrompt.Item objects
+        gap_threshold: Minimum score gap threshold (default: 0.1)
+    
+    Returns:
+        List of lists with only items that have a score gap greater than or equal to the threshold
+    """
+    filtered_items = []
+    
+    for items in items_list:
+        if not items:
+            filtered_items.append([])
+            continue
+        
+        # Get the highest score in the current list
+        max_score = max(item.score for item in items)
+        
+        # Filter items based on the score gap
+        filtered = [item for item in items if (max_score - item.score) <= gap_threshold]
+        filtered_items.append(filtered)
+    
+    return filtered_items
