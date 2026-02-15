@@ -1,4 +1,3 @@
-from slugify import slugify
 import csv
 import hashlib
 from pathlib import Path
@@ -6,9 +5,9 @@ from typing import Callable
 
 import chromadb
 import pandas as pd
+from slugify import slugify
 
 from utils.ai import PesquisaPrompt, get_candidates
-from utils.db import QueryResultsDB
 from utils.embeddings import emb_fn_bge_m3
 from utils.input import get_notas_fiscais, get_pesquisa
 from utils.preprocesssing import apply_replacements, get_replacements_from_llm
@@ -33,6 +32,55 @@ def create_chroma_db(documents, name) -> chromadb.Collection:
         ids=[hashlib.md5(doc.encode()).hexdigest() for doc in documents],
     )
     return db
+
+
+def split_queries_by_confidence(
+    queries: list[str],
+    relevant_results: list[list[PesquisaPrompt.Item]],
+    max_score_threshold: float = 0.9,
+) -> tuple[
+    tuple[list[str], list[list[PesquisaPrompt.Item]]],
+    tuple[list[str], list[list[PesquisaPrompt.Item]]],
+]:
+    """Split queries into low and high confidence based on maximum score threshold.
+
+    Args:
+        queries: List of query strings
+        relevant_results: List of lists containing PesquisaPrompt.Item objects
+        max_score_threshold: Maximum score threshold (default: 0.9)
+
+    Returns:
+        Tuple of two tuples:
+        - First tuple: (low_confidence_queries, low_confidence_results)
+          where max score < threshold
+        - Second tuple: (high_confidence_queries, high_confidence_results)
+          where max score >= threshold
+    """
+    low_confidence_queries = []
+    low_confidence_results = []
+    high_confidence_queries = []
+    high_confidence_results = []
+
+    for query, results in zip(queries, relevant_results):
+        # Check if results list is empty or get max score
+        if not results:
+            continue
+        else:
+            max_score_item = max(results, key=lambda item: item.score)
+            if max_score_item.score < max_score_threshold:
+                low_confidence_queries.append(query)
+                low_confidence_results.append(results)
+            else:
+                max_score_item.matched = (
+                    True  # Mark the item with the highest score as matched
+                )
+                high_confidence_queries.append(query)
+                high_confidence_results.append(results)
+
+    return (low_confidence_queries, low_confidence_results), (
+        high_confidence_queries,
+        high_confidence_results,
+    )
 
 
 def filter_by_distance(
@@ -117,6 +165,37 @@ def print_replaced_descricoes(descricoes: list[str]) -> None:
         print(f"{idx}. {descr}")
 
 
+def print_confidence_results(
+    queries: list[str],
+    results: list[list[PesquisaPrompt.Item]],
+    confidence_type: str = "Results",
+) -> None:
+    """Print confidence results showing queries and their matched items.
+
+    Args:
+        queries: List of query strings
+        results: List of lists containing PesquisaPrompt.Item objects
+        confidence_type: Type label for the output (e.g., "High Confidence", "Low Confidence")
+    """
+    print(f"\n{'=' * 80}")
+    print(f"{confidence_type}")
+    print(f"{'=' * 80}")
+
+    for idx, (query, items) in enumerate(zip(queries, results), start=1):
+        print(f"\n[{idx}] Query: {query}")
+
+        if not items:
+            print("  No items found")
+        else:
+            print(f"  Items ({len(items)}):")
+            for item in items:
+                matched_indicator = "✓" if item.matched else " "
+                print(
+                    f"    [{matched_indicator}] {item.description}"
+                    f"\n        Score: {item.score:.4f}, Distance: {item.distance:.4f}"
+                )
+
+
 def get_descricoes_notas(df_notas_fiscais: pd.DataFrame) -> list[str]:
     """Extract 'descr_compl' column from DataFrame as a list of strings."""
     return df_notas_fiscais["descr_compl"].tolist()
@@ -131,7 +210,8 @@ def process_queries(
     queries: list[str],
     documents: list[str],
     context: str,
-) -> list[PesquisaPrompt]:
+    provider: str = "gemini",
+):
     """
     Process a list of queries against a list of documents with optional preprocessing.
 
@@ -139,10 +219,10 @@ def process_queries(
         queries: List of search queries to match against documents
         documents: List of document strings to search through
         context: Context string for LLM replacement preprocessing
-        db_name: Name for the ChromaDB collection
+        provider: LLM provider to use for candidate selection ('gemini' or 'ollama')
 
-    Returns:
-        List of PesquisaPrompt objects with relevant results
+    Yields:
+        Tuples of (queries, results) for high confidence and processed low confidence results
     """
     # Get replacements from LLM and apply them to documents
     replacements = get_replacements_from_llm(documents, context=context)
@@ -165,7 +245,7 @@ def process_queries(
     db = create_chroma_db(processed_documents, slugify(context))
 
     print("Querying relevant documents from ChromaDB...")
-    relevant_results = get_relevant_results(queries, db, n_results=10)
+    relevant_results = get_relevant_results(queries, db, n_results=5)
 
     if not relevant_results:
         raise ValueError("No relevant documents found for the given descriptions.")
@@ -175,18 +255,45 @@ def process_queries(
     relevant_results = filter_items_by_score(reranked, threshold=0.8)
     relevant_results = filter_items_by_score_gap(relevant_results, gap_threshold=0.1)
 
-    print("Building prompts...")
-    prompts = build_prompts(queries, relevant_results)
-
-    write_with_stdout_redirect(
-        OUTPUT_PATH / "prompts_output.txt", lambda: print_prompts(prompts)
+    low_confidence, high_confidence = split_queries_by_confidence(
+        queries, relevant_results
     )
 
-    db_path = OUTPUT_PATH / "query_results.db"
-    with QueryResultsDB(db_path) as query_db:
-        query_db.store_prompts(prompts)
+    print(f"High confidence queries: {len(high_confidence[0])}")
+    print(f"Low confidence queries: {len(low_confidence[0])}")
 
-    return prompts
+    # Print high confidence results
+    write_with_stdout_redirect(
+        OUTPUT_PATH / "high_confidence_results.txt",
+        lambda: print_confidence_results(
+            *high_confidence, "High Confidence Results"
+        ),
+    )
+
+    # Print low confidence results
+    if low_confidence[0]:
+        write_with_stdout_redirect(
+            OUTPUT_PATH / "low_confidence_results.txt",
+            lambda: print_confidence_results(
+                *low_confidence, "Low Confidence Results"
+            ),
+        )
+
+    # Yield high confidence results first
+    yield high_confidence
+
+    # Process low confidence queries with LLM
+    if low_confidence[0]:  # If there are low confidence queries
+        print(
+            f"Processing {len(low_confidence[0])} low confidence queries with {provider}..."
+        )
+        for processed_queries, processed_results in get_candidates(
+            *low_confidence, provider=provider
+        ):
+            print(f"Processed {len(processed_queries)} queries through LLM")
+            yield (processed_queries, processed_results)
+    else:
+        print("No low confidence queries to process")
 
 
 def main():
@@ -198,30 +305,9 @@ def main():
     )
     descricoes_notas = get_descricoes_notas(df_notas_fiscais)
 
-    prompts = process_queries(
-        queries=descricoes_pesquisa,
-        documents=descricoes_notas,
-        context="SUBGRUPO: Pneus para motociletas.",
-    )
-
-    # print("Getting candidates from LLM...")
-    # # Call get_candidates and write results to CSV as they come
-    # with open(OUTPUT_PATH / 'candidates_results.csv', 'w', newline='', encoding='utf-8') as csvfile:
-    #     fieldnames = ['id','item', 'candidate', 'rank']
-    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    #     writer.writeheader()
-
-    #     for result in get_candidates(prompts, provider='ollama'):
-    #         for candidate in result.candidates:
-    #             writer.writerow({
-    #                 'id': result.prompt.id,
-    #                 'item': result.prompt.item_description,
-    #                 'candidate': candidate.description,
-    #                 'rank': candidate.rank
-    #             })
-    #         print('Rows written for item:', result.prompt.item_description)
-    #         csvfile.flush()  # Flush after each batch to ensure data is written
-    print("Finished.")
+    for queries, results in process_queries(descricoes_pesquisa, descricoes_notas, context="pneus moto"):
+        print(f"Yielded {len(queries)} queries with their results")
+        # Here you can add any additional processing for the yielded results
 
 
 if __name__ == "__main__":
