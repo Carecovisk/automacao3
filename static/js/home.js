@@ -50,6 +50,10 @@ document.getElementById('confirmBtn').addEventListener('click', async function()
         return;
     }
 
+    // Extract header and determine description column (use first column by default)
+    const header = currentData[0];
+    const descriptionColumn = header && header.length > 0 ? header[2] : 'DESCRIÇÃO';
+
     try {
         const response = await fetch('/api/confirm-data', {
             method: 'POST',
@@ -58,7 +62,8 @@ document.getElementById('confirmBtn').addEventListener('click', async function()
             },
             body: JSON.stringify({
                 data: currentData,
-                description: currentDescription
+                description: currentDescription,
+                description_column: descriptionColumn
             })
         });
 

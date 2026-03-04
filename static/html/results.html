@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processando - Correspondência de Produtos</title>
+    <link rel="stylesheet" href="/static/css/tailwind.css" />
+</head>
+<body class="bg-gray-100 p-5">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-5 text-gray-800">Processamento de Correspondências</h1>
+
+        <!-- Progress Section -->
+        <div id="progressSection" class="bg-white p-5 rounded-lg shadow-md mb-5">
+            <h2 class="text-xl font-semibold mb-3 text-gray-700">Status do Processamento</h2>
+            
+            <div class="mb-3">
+                <div class="flex justify-between mb-1">
+                    <span id="statusText" class="text-sm font-medium text-gray-700">Inicializando...</span>
+                    <span id="percentageText" class="text-sm font-medium text-gray-700">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                    <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="text-sm text-gray-600">
+                <span id="progressText">0 / 0</span> itens processados
+            </div>
+            
+            <div id="stageText" class="text-sm text-gray-500 mt-2 italic"></div>
+        </div>
+
+        <!-- Error Section (hidden by default) -->
+        <div id="errorSection" class="bg-red-50 border border-red-200 p-5 rounded-lg shadow-md mb-5 hidden">
+            <h2 class="text-xl font-semibold mb-3 text-red-700">Erro no Processamento</h2>
+            <p id="errorMessage" class="text-red-600"></p>
+            <button onclick="window.location.href='/upload'" class="mt-3 py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
+                Voltar para Upload
+            </button>
+        </div>
+
+        <!-- Results Section (hidden initially) -->
+        <div id="resultsSection" class="bg-white p-5 rounded-lg shadow-md hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-700">Resultados - Alta Confiança</h2>
+                <button id="downloadBtn" class="py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                    Baixar CSV
+                </button>
+            </div>
+            
+            <div id="resultsCount" class="text-sm text-gray-600 mb-3"></div>
+            
+            <div class="overflow-x-auto">
+                <table id="resultsTable" class="min-w-full bg-white border border-gray-300">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="py-3 px-4 border-b border-r border-gray-300 text-left text-sm font-semibold text-gray-700">#</th>
+                            <th class="py-3 px-4 border-b border-r border-gray-300 text-left text-sm font-semibold text-gray-700">Consulta</th>
+                            <th class="py-3 px-4 border-b border-r border-gray-300 text-left text-sm font-semibold text-gray-700">Correspondências</th>
+                            <th class="py-3 px-4 border-b border-gray-300 text-left text-sm font-semibold text-gray-700">Melhor Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="mt-5 flex justify-between">
+            <button onclick="window.location.href='/'" class="py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+                Voltar ao Início
+            </button>
+            <button onclick="window.location.href='/upload'" class="py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                Nova Pesquisa
+            </button>
+        </div>
+    </div>
+
+    <script src="/static/js/results.js"></script>
+
+</body>
+</html>

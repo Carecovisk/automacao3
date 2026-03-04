@@ -1,3 +1,4 @@
+from typing import Callable, Optional
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
 from utils.ai import PesquisaPrompt
@@ -6,19 +7,28 @@ reranker_model_name = "BAAI/bge-reranker-v2-m3"
 reranker = CrossEncoder(reranker_model_name, max_length=512)
 
 
-def rerank_items(queries: list[str], items_list: list[list[PesquisaPrompt.Item]]) -> list[list[PesquisaPrompt.Item]]:
+def rerank_items(
+    queries: list[str], 
+    items_list: list[list[PesquisaPrompt.Item]], 
+    progress_callback: Optional[Callable[[int, int], None]] = None
+) -> list[list[PesquisaPrompt.Item]]:
     """Rerank PesquisaPrompt.Item objects using a Cross-Encoder model.
     
     Args:
         queries: List of query strings
         items_list: List of lists containing PesquisaPrompt.Item objects
+        progress_callback: Optional callback function(current, total) for progress tracking
     
     Returns:
         List of lists of PesquisaPrompt.Item objects sorted by score (descending)
     """
     reranked_items = []
+    total = len(queries)
     
-    for query, items in tqdm(zip(queries, items_list), total=len(queries), desc="Reranking"):
+    # Use progress_callback if provided, otherwise use tqdm
+    iterator = zip(queries, items_list) if progress_callback else tqdm(zip(queries, items_list), total=total, desc="Reranking")
+    
+    for idx, (query, items) in enumerate(iterator, start=1):
         # Create pairs of [query, item description]
         pairs = [[query, item.description] for item in items]
         
@@ -32,6 +42,10 @@ def rerank_items(queries: list[str], items_list: list[list[PesquisaPrompt.Item]]
         ]
         ranked = sorted(items_with_scores, key=lambda x: x.score, reverse=True)
         reranked_items.append(ranked)
+        
+        # Call progress callback if provided
+        if progress_callback:
+            progress_callback(idx, total)
     
     return reranked_items
 

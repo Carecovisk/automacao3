@@ -21,8 +21,10 @@
         <div class="hidden mt-8" id="columnSelection">
             <div class="bg-green-50 p-4 rounded-lg mb-5">
                 <p class="my-1 text-green-800"><strong>Arquivo:</strong> <span id="fileName"></span></p>
+                <p class="my-1 text-green-800"><strong>Planilha:</strong> <span id="sheetName"></span></p>
                 <p class="my-1 text-green-800"><strong>Linhas:</strong> <span id="rowCount"></span></p>
                 <p class="my-1 text-green-800"><strong>Colunas:</strong> <span id="colCount"></span></p>
+                <!-- <p class="text-sm text-gray-600 mt-2"><em>Obs: O programa sempre processa a primeira planilha do arquivo</em></p> -->
             </div>
             
             <div class="mb-5">                <label for="skipRows" class="block mb-2 font-bold text-gray-600">Pular Linhas Iniciais:</label>
@@ -30,7 +32,14 @@
                 <p class="text-sm text-gray-500 mt-1">Número de linhas a pular antes do cabeçalho (padrão: 0)</p>
             </div>
             
-            <div class="mb-5">                <label for="descriptionCol" class="block mb-2 font-bold text-gray-600">Coluna de Descrição:</label>
+            <div class="mb-5">
+                <label for="filterText" class="block mb-2 font-bold text-gray-600">Filtrar Descrições (opcional):</label>
+                <input type="text" id="filterText" placeholder="Digite o texto para filtrar as descrições" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                <p class="text-sm text-gray-500 mt-1">Apenas linhas contendo este texto serão processadas (deixe em branco para processar todas)</p>
+            </div>
+           
+            <div class="mb-5">
+                <label for="descriptionCol" class="block mb-2 font-bold text-gray-600">Coluna de Descrição:</label>
                 <select id="descriptionCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option value="">-- Selecione a coluna --</option>
                 </select>

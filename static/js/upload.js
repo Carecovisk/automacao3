@@ -1,6 +1,7 @@
 let currentFileData = null;
 let currentFileName = null;
 let currentFullData = null; // Store full data including skipped rows
+let currentSheetName = null;
 
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
@@ -56,6 +57,7 @@ function processFile(file) {
     
     currentFileName = file.name;
     
+
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -65,6 +67,9 @@ function processFile(file) {
             // Get the first sheet
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Store sheet name for display
+            currentSheetName = firstSheetName;
             
             // Convert to JSON
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -83,6 +88,7 @@ function processFile(file) {
             
             // Update file info
             document.getElementById('fileName').textContent = currentFileName;
+            document.getElementById('sheetName').textContent = currentSheetName || 'Sheet1';
             document.getElementById('rowCount').textContent = jsonData.length - 1 - skipRows; // Exclude header and skipped rows
             document.getElementById('colCount').textContent = columns.length;
             document.getElementById('skipRows').value = skipRows;
@@ -196,12 +202,14 @@ submitBtn.addEventListener('click', async () => {
     const valCol = parseInt(document.getElementById('valueCol').value);
     const qtyCol = parseInt(document.getElementById('quantityCol').value);
     const skipRows = parseInt(document.getElementById('skipRows').value) || 0;
+    const filterText = document.getElementById('filterText').value.trim();
     
     // Extract data with selected columns
     const headers = currentFileData[0];
     const processedData = {
         fileName: currentFileName,
         skipRows: skipRows,
+        filterText: filterText || null,
         columns: {
             description: headers[descCol],
             value: headers[valCol],
@@ -236,9 +244,9 @@ submitBtn.addEventListener('click', async () => {
             showStatus('Dados processados com sucesso!', 'success');
             console.log('Resultado:', result);
             
-            // Reset form after 2 seconds
+            // Redirect to results page
             setTimeout(() => {
-                resetForm();
+                window.location.href = `/results`;
             }, 2000);
         } else {
             const error = await response.text();
@@ -269,6 +277,7 @@ function resetForm() {
     currentFileData = null;
     currentFileName = null;
     currentFullData = null;
+    currentSheetName = null;
     fileInput.value = '';
     columnSelection.classList.add('hidden');
     statusDiv.classList.add('hidden');

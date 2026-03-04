@@ -282,20 +282,6 @@ def process_queries(
     # Yield high confidence results first
     return high_confidence
 
-    # # Process low confidence queries with LLM
-    # if low_confidence[0]:  # If there are low confidence queries
-    #     print(
-    #         f"Processing {len(low_confidence[0])} low confidence queries with {provider}..."
-    #     )
-    #     for processed_queries, processed_results in get_candidates(
-    #         *low_confidence, provider=provider
-    #     ):
-    #         print(f"Processed {len(processed_queries)} queries through LLM")
-    #         yield (processed_queries, processed_results)
-    # else:
-    #     print("No low confidence queries to process")
-
-
 def main():
     df_pesquisa = get_pesquisa("./data/pesquisa.xlsx")
     descricoes_pesquisa = get_descricoes_pesquisa(df_pesquisa)
@@ -305,9 +291,9 @@ def main():
     )
     descricoes_notas = get_descricoes_notas(df_notas_fiscais)
 
-    for queries, results in process_queries(descricoes_pesquisa, descricoes_notas, context="pneus moto"):
-        print(f"Yielded {len(queries)} queries with their results")
-        # Here you can add any additional processing for the yielded results
+    queries, results = process_queries(descricoes_pesquisa, descricoes_notas, context="pneus moto")
+    print(f"Yielded {len(queries)} queries with their results")
+    # Here you can add any additional processing for the yielded results
 
 
 if __name__ == "__main__":
