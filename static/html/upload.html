@@ -24,7 +24,6 @@
                 <p class="my-1 text-green-800"><strong>Planilha:</strong> <span id="sheetName"></span></p>
                 <p class="my-1 text-green-800"><strong>Linhas:</strong> <span id="rowCount"></span></p>
                 <p class="my-1 text-green-800"><strong>Colunas:</strong> <span id="colCount"></span></p>
-                <!-- <p class="text-sm text-gray-600 mt-2"><em>Obs: O programa sempre processa a primeira planilha do arquivo</em></p> -->
             </div>
             
             <div class="mb-5">                <label for="skipRows" class="block mb-2 font-bold text-gray-600">Pular Linhas Iniciais:</label>
@@ -35,7 +34,15 @@
             <div class="mb-5">
                 <label for="filterText" class="block mb-2 font-bold text-gray-600">Filtrar Descrições (opcional):</label>
                 <input type="text" id="filterText" placeholder="Digite o texto para filtrar as descrições" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                <p class="text-sm text-gray-500 mt-1">Apenas linhas contendo este texto serão processadas (deixe em branco para processar todas)</p>
+                <p class="text-sm text-gray-500 mt-1">Apenas linhas contendo este texto serão processadas</p>
+                
+                <div class="flex items-center mt-3">
+                    <input type="checkbox" id="isRegex" class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2">
+                    <label for="isRegex" class="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
+                        Usar Expressão Regular
+                    </label>
+                    <span class="ml-2 text-gray-500 cursor-help" title="Uma expressão regular permite padrões de busca avançados. Exemplos: '^Teste' (começa com Teste), 'A|B' (contém A ou B), '\d+' (contém números). Use apenas se souber o que está fazendo.">ℹ️</span>
+                </div>
             </div>
            
             <div class="mb-5">

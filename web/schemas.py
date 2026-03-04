@@ -13,6 +13,7 @@ class ExcelData(BaseModel):
     fileName: str
     skipRows: int
     filterText: Optional[str] = None
+    isRegex: bool = False
     columns: "ExcelColumns"
     columnIndices: "ExcelColumnIndices"
     data: List["ExcelRow"]

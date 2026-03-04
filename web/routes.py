@@ -226,9 +226,13 @@ async def receive_excel_data(payload: ExcelData):
     # Apply filter if provided
     if payload.filterText:
         initial_count = len(_excel_df)
-        _excel_df = _excel_df[_excel_df["description"].str.contains(payload.filterText, case=False, na=False)]
-        filtered_count = len(_excel_df)
-        print(f"Filtered from {initial_count} to {filtered_count} rows based on filter: '{payload.filterText}'")
+        try:
+            _excel_df = _excel_df[_excel_df["description"].str.contains(payload.filterText, case=False, na=False, regex=payload.isRegex)]
+            filtered_count = len(_excel_df)
+            filter_type = "regex" if payload.isRegex else "text"
+            print(f"Filtered from {initial_count} to {filtered_count} rows based on {filter_type} filter: '{payload.filterText}'")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Erro no filtro: {str(e)}. Verifique se a expressão regular está correta.")
     
     _excel_df = (
         _excel_df
@@ -249,6 +253,7 @@ async def receive_excel_data(payload: ExcelData):
         "fileName": payload.fileName,
         "skipRows": payload.skipRows,
         "filterText": payload.filterText,
+        "isRegex": payload.isRegex,
         "rows_count": len(payload.data),
         "filtered_rows_count": len(_excel_df),
         "columns": payload.columns,

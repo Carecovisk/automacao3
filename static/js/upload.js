@@ -203,6 +203,7 @@ submitBtn.addEventListener('click', async () => {
     const qtyCol = parseInt(document.getElementById('quantityCol').value);
     const skipRows = parseInt(document.getElementById('skipRows').value) || 0;
     const filterText = document.getElementById('filterText').value.trim();
+    const isRegex = document.getElementById('isRegex').checked;
     
     // Extract data with selected columns
     const headers = currentFileData[0];
@@ -210,6 +211,7 @@ submitBtn.addEventListener('click', async () => {
         fileName: currentFileName,
         skipRows: skipRows,
         filterText: filterText || null,
+        isRegex: isRegex,
         columns: {
             description: headers[descCol],
             value: headers[valCol],
