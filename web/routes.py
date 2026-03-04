@@ -27,6 +27,21 @@ def _update_task_status(task_id: str, **updates):
             _task_store[task_id].update(updates)
 
 
+def _insert_documents_in_batches(db, processed_documents: list[str], batch_size: int = 1000):
+    """Insert documents into ChromaDB in batches to avoid memory issues with large datasets."""
+    import hashlib
+    
+    total_docs = len(processed_documents)
+    for i in range(0, total_docs, batch_size):
+        batch_docs = processed_documents[i:i + batch_size]
+        batch_ids = [hashlib.md5(doc.encode()).hexdigest() for doc in batch_docs]
+        db.upsert(
+            documents=batch_docs,
+            ids=batch_ids,
+        )
+        print(f"Inserted batch {i // batch_size + 1}/{(total_docs + batch_size - 1) // batch_size} ({len(batch_docs)} documents)")
+
+
 def _process_matching_task(task_id: str, queries: list[str], documents: list[str], context: str):
     """Background task to process query matching with progress tracking."""
     try:
@@ -64,10 +79,8 @@ def _process_matching_task(task_id: str, queries: list[str], documents: list[str
             name=slugify(context), embedding_function=emb_fn_bge_m3  # type: ignore
         )
         
-        db.upsert(
-            documents=processed_documents,
-            ids=[hashlib.md5(doc.encode()).hexdigest() for doc in processed_documents],
-        )
+        # Insert documents in batches
+        _insert_documents_in_batches(db, processed_documents)
         
         _update_task_status(task_id, stage="querying_db")
         
@@ -86,7 +99,7 @@ def _process_matching_task(task_id: str, queries: list[str], documents: list[str
             relevant_results.append(items)
         
         if not relevant_results:
-            raise ValueError("No relevant documents found for the given descriptions.")
+            raise ValueError("Nenhum documento relevante encontrado para as descrições fornecidas.")
         
         _update_task_status(task_id, stage="reranking")
         
@@ -136,10 +149,10 @@ async def read_results():
     
     # Validate data exists
     if _pasted_df is None or _excel_df is None:
-        raise HTTPException(status_code=400, detail="Data not uploaded. Please upload both pasted and Excel data first.")
+        raise HTTPException(status_code=400, detail="Dados não carregados. Por favor, envie os dados colados e o arquivo Excel primeiro.")
     
     if _pasted_description_column is None or _pasted_description_column not in _pasted_df.columns:
-        raise HTTPException(status_code=400, detail=f"Invalid description column: {_pasted_description_column}")
+        raise HTTPException(status_code=400, detail=f"Coluna de descrição inválida: {_pasted_description_column}")
     
     # Extract queries and documents
     queries = _pasted_df[_pasted_description_column].tolist()
@@ -181,7 +194,7 @@ async def get_task_status(task_id: str):
         task = _task_store.get(task_id)
     
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
     
     return JSONResponse(content=task)
 

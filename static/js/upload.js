@@ -85,6 +85,7 @@ function processFile(file) {
             // Get column names (first row by default)
             const skipRows = 0;
             const columns = jsonData[skipRows];
+            console.log('Columns:', columns);
             
             // Update file info
             document.getElementById('fileName').textContent = currentFileName;
