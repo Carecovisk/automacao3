@@ -55,6 +55,7 @@ document.getElementById('confirmBtn').addEventListener('click', async function()
     const descriptionColumn = header && header.length > 0 ? header[2] : 'DESCRIÇÃO';
 
     try {
+        NProgress.start();
         const response = await fetch('/api/confirm-data', {
             method: 'POST',
             headers: {
@@ -69,7 +70,6 @@ document.getElementById('confirmBtn').addEventListener('click', async function()
 
         if (response.ok) {
             const result = await response.json();
-            alert('Dados confirmados e enviados com sucesso!');
             console.log('Resposta do servidor:', result);
             window.location.href = '/upload';
         } else {
@@ -77,5 +77,7 @@ document.getElementById('confirmBtn').addEventListener('click', async function()
         }
     } catch (error) {
         alert('Erro ao enviar dados: ' + error.message);
+    } finally {
+        NProgress.done();
     }
 });

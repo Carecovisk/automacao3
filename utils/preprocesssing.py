@@ -2,7 +2,7 @@ import json
 import random
 import re
 import uuid
-from collections.abc import Hashable
+from collections.abc import Callable, Hashable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,7 +54,8 @@ _replacement_cache = CacheManager(
 def get_replacements_from_llm(
     strings: list[str],
     context: str = "Dados de varejo contendo abreviações e variações",
-    use_cache: bool = True
+    use_cache: bool = True,
+    status_callback: Callable[[str], None] | None = None,
 ) -> list[Replacement]:
     """
     Create a PreprocessingPrompt from a list of strings and get replacements using Gemini API.
@@ -64,6 +65,7 @@ def get_replacements_from_llm(
         strings: List of strings to analyze for common abbreviations and patterns
         context: Context description for the prompt (default: retail data context)
         use_cache: Whether to use cached results if available (default: True)
+        status_callback: Optional callback to report status messages (receives a message string)
 
     Returns:
         List of Replacement objects containing regex patterns and replacements
@@ -71,13 +73,19 @@ def get_replacements_from_llm(
 
     # Try to load from cache first
     if use_cache:
+        if status_callback:
+            status_callback("Verificando cache de replacements...")
         cached_result = _replacement_cache.load(context)
         if cached_result is not None:
             print(f"✓ Loaded {len(cached_result)} replacements from cache")
+            if status_callback:
+                status_callback(f"✓ {len(cached_result)} replacements carregados do cache")
             return cached_result
 
     # Cache miss or cache disabled - call the LLM
     print("calling LLM API...")
+    if status_callback:
+        status_callback("Chamando LLM para gerar replacements...")
     sample = random.sample(strings, min(len(strings), 50))
 
     prompt = PreprocessingPrompt(id=uuid.uuid4(), sample=sample, context=context)
@@ -88,6 +96,9 @@ def get_replacements_from_llm(
     # Save to cache
     if use_cache:
         _replacement_cache.save(context, replacements)
+
+    if status_callback:
+        status_callback(f"✓ {len(replacements)} replacements gerados pelo LLM")
 
     return replacements
 

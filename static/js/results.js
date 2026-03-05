@@ -71,7 +71,7 @@ async function pollTaskStatus() {
 
 // Update UI based on task status
 function updateUI(data) {
-    const { status, progress, total, percentage, results, error, stage } = data;
+    const { status, progress, total, percentage, results, error, stage, message } = data;
     
     // Update progress bar
     const progressBar = document.getElementById('progressBar');
@@ -79,6 +79,7 @@ function updateUI(data) {
     const progressText = document.getElementById('progressText');
     const statusText = document.getElementById('statusText');
     const stageText = document.getElementById('stageText');
+    const messageText = document.getElementById('messageText');
     
     if (progressBar && percentage !== undefined) {
         progressBar.style.width = `${percentage}%`;
@@ -114,11 +115,18 @@ function updateUI(data) {
         const stageMap = {
             'initializing': 'Inicializando...',
             'preprocessing': 'Pré-processando documentos...',
+            'llm_replacements': 'Obtendo replacements do LLM...',
             'creating_db': 'Criando banco de dados vetorial...',
+            'inserting_db': 'Inserindo documentos no banco vetorial...',
             'querying_db': 'Consultando documentos relevantes...',
             'reranking': 'Reordenando resultados...'
         };
         stageText.textContent = stageMap[stage] || stage;
+    }
+
+    // Update arbitrary message
+    if (messageText) {
+        messageText.textContent = message || '';
     }
     
     // Handle completion

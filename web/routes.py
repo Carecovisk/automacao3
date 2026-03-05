@@ -21,17 +21,18 @@ _task_lock = threading.Lock()
 
 
 def _update_task_status(task_id: str, **updates):
-    """Thread-safe task status update."""
+    """Thread-safe task status update. Accepts arbitrary keyword arguments (e.g. message='...') to store alongside the standard fields."""
     with _task_lock:
         if task_id in _task_store:
             _task_store[task_id].update(updates)
 
 
-def _insert_documents_in_batches(db, processed_documents: list[str], batch_size: int = 1000):
+def _insert_documents_in_batches(db, processed_documents: list[str], batch_size: int = 5000, message_callback=None):
     """Insert documents into ChromaDB in batches to avoid memory issues with large datasets."""
     import hashlib
     
     total_docs = len(processed_documents)
+    total_batches = (total_docs + batch_size - 1) // batch_size
     for i in range(0, total_docs, batch_size):
         batch_docs = processed_documents[i:i + batch_size]
         batch_ids = [hashlib.md5(doc.encode()).hexdigest() for doc in batch_docs]
@@ -39,7 +40,11 @@ def _insert_documents_in_batches(db, processed_documents: list[str], batch_size:
             documents=batch_docs,
             ids=batch_ids,
         )
-        print(f"Inserted batch {i // batch_size + 1}/{(total_docs + batch_size - 1) // batch_size} ({len(batch_docs)} documents)")
+        current_batch = i // batch_size + 1
+        msg = f"Inserindo batch {current_batch}/{total_batches} ({len(batch_docs)} documentos)"
+        print(msg)
+        if message_callback:
+            message_callback(msg)
 
 
 def _process_matching_task(task_id: str, queries: list[str], documents: list[str], context: str):
@@ -62,13 +67,19 @@ def _process_matching_task(task_id: str, queries: list[str], documents: list[str
             _update_task_status(task_id, progress=current, total=total, percentage=round((current / total) * 100, 2))
         
         # Run the processing pipeline (simplified version of process_queries with progress tracking)
-        _update_task_status(task_id, status="running", stage="preprocessing")
+        _update_task_status(task_id, status="running", stage="preprocessing", message="Iniciando pré-processamento...")
         
         # Get replacements from LLM and apply them
-        replacements = get_replacements_from_llm(documents, context=context)
+        _update_task_status(task_id, stage="llm_replacements", message="Obtendo replacements do LLM...")
+
+        def llm_status_callback(msg: str):
+            _update_task_status(task_id, message=msg)
+
+        replacements = get_replacements_from_llm(documents, context=context, status_callback=llm_status_callback)
+        _update_task_status(task_id, stage="preprocessing", message="Aplicando replacements aos documentos...")
         processed_documents = apply_replacements(documents, replacements)
         
-        _update_task_status(task_id, stage="creating_db")
+        _update_task_status(task_id, stage="creating_db", message="Criando coleção vetorial...")
         
         # Set up the DB
         OUTPUT_PATH = Path("./data/output")
@@ -80,9 +91,14 @@ def _process_matching_task(task_id: str, queries: list[str], documents: list[str
         )
         
         # Insert documents in batches
-        _insert_documents_in_batches(db, processed_documents)
+        _update_task_status(task_id, stage="inserting_db", message="Inserindo documentos no banco vetorial...")
+
+        def batch_message_callback(msg: str):
+            _update_task_status(task_id, message=msg)
+
+        _insert_documents_in_batches(db, processed_documents, message_callback=batch_message_callback)
         
-        _update_task_status(task_id, stage="querying_db")
+        _update_task_status(task_id, stage="querying_db", message="Consultando documentos relevantes...")
         
         # Query relevant results
         results = db.query(query_texts=queries, n_results=5)
@@ -101,7 +117,7 @@ def _process_matching_task(task_id: str, queries: list[str], documents: list[str
         if not relevant_results:
             raise ValueError("Nenhum documento relevante encontrado para as descrições fornecidas.")
         
-        _update_task_status(task_id, stage="reranking")
+        _update_task_status(task_id, stage="reranking", message="Reordenando e filtrando resultados...")
         
         # Rerank with progress tracking
         reranked = rerank_items(queries, relevant_results, progress_callback=progress_callback)
@@ -170,7 +186,8 @@ async def read_results():
             "percentage": 0.0,
             "results": None,
             "error": None,
-            "stage": "initializing"
+            "stage": "initializing",
+            "message": None
         }
     
     # Start background thread
