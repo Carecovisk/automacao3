@@ -81,9 +81,10 @@ def run_matching_pipeline(
 
         # --- Stage 2: Vector DB ----------------------------------------------
         task_updater(task_id, stage="creating_db", message="Criando coleção vetorial...")
-        _OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+        DB_STORAGE_PATH = _OUTPUT_PATH / "chromadb_storage"
+        DB_STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 
-        chroma_client = chromadb.PersistentClient(path=str(_OUTPUT_PATH / "chromadb_storage"))
+        chroma_client = chromadb.PersistentClient(path=DB_STORAGE_PATH)
         db = chroma_client.get_or_create_collection(
             name=slugify(context), embedding_function=emb_fn_bge_m3  # type: ignore
         )

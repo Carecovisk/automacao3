@@ -5,6 +5,8 @@
     <title>Upload e Configuração de Colunas</title>
     <link rel="stylesheet" href="/static/css/tailwind.css" />
     <script src="/static/js/vendor/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/static/css/nprogress.css" />
+    <script src="/static/js/vendor/nprogress.js"></script>
 </head>
 <body class="bg-gray-100 p-5">
 
@@ -53,19 +55,19 @@
             </div>
             
             <div class="mb-5">
-                <label for="valueCol" class="block mb-2 font-bold text-gray-600">Coluna de Valor:</label>
-                <select id="valueCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <option value="">-- Selecione a coluna --</option>
-                </select>
-            </div>
-            
-            <div class="mb-5">
                 <label for="quantityCol" class="block mb-2 font-bold text-gray-600">Coluna de Quantidade:</label>
                 <select id="quantityCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option value="">-- Selecione a coluna --</option>
                 </select>
             </div>
             
+            <div class="mb-5">
+                <label for="valueCol" class="block mb-2 font-bold text-gray-600">Coluna de Valor:</label>
+                <select id="valueCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">-- Selecione a coluna --</option>
+                </select>
+            </div>
+
             <button class="w-full py-3 px-8 bg-green-500 text-white rounded-md cursor-pointer text-base hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" id="submitBtn" disabled>Processar Arquivo</button>
             
             <div id="status" class="mt-4 p-2.5 rounded-md text-center hidden"></div>

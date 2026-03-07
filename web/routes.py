@@ -130,7 +130,6 @@ async def receive_excel_data(payload: ExcelData):
     # TODO: Adicionar lógica de processamento do Excel
     global _excel_df
     _excel_df = pd.DataFrame([row.model_dump() for row in payload.data])
-    _excel_df.to_csv("raw_excel_data.csv", index=False)  # Salva os dados brutos para depuração
     
     # Apply filter if provided
     if payload.filterText:
@@ -154,7 +153,6 @@ async def receive_excel_data(payload: ExcelData):
     _excel_df["mean_value"] = _excel_df["total_value"] / _excel_df["quantity"]
     _excel_df = _excel_df.drop(columns=["total_value", "quantity"])
     _excel_df = _excel_df.dropna()
-    _excel_df.to_csv("processed_excel_data.csv", index=False)
 
     return {
         "status": "success",

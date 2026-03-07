@@ -27,7 +27,7 @@ uploadArea.addEventListener('dragleave', () => {
 uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadArea.classList.remove('bg-green-100');
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
         processFile(file);
@@ -49,81 +49,83 @@ function processFile(file) {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/vnd.ms-excel'
     ];
-    
+
     if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls)$/i)) {
         showStatus('Erro: Por favor, selecione um arquivo Excel válido (.xlsx ou .xls)', 'error');
         return;
     }
-    
+
     currentFileName = file.name;
-    
+
 
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            
+
             // Get the first sheet
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-            
+
             // Store sheet name for display
             currentSheetName = firstSheetName;
-            
+
             // Convert to JSON
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            
+
             if (jsonData.length === 0) {
                 showStatus('Erro: O arquivo está vazio', 'error');
                 return;
             }
-            
+
             currentFullData = jsonData;
             currentFileData = jsonData;
-            
+
             // Get column names (first row by default)
             const skipRows = 0;
             const columns = jsonData[skipRows];
             console.log('Columns:', columns);
-            
+
             // Update file info
             document.getElementById('fileName').textContent = currentFileName;
             document.getElementById('sheetName').textContent = currentSheetName || 'Sheet1';
             document.getElementById('rowCount').textContent = jsonData.length - 1 - skipRows; // Exclude header and skipped rows
             document.getElementById('colCount').textContent = columns.length;
             document.getElementById('skipRows').value = skipRows;
-            
+
             // Populate column selectors
             populateColumnSelectors(columns);
-            
+
             // Show column selection section
             columnSelection.classList.remove('hidden');
-            
+
             showStatus('Arquivo carregado com sucesso! Agora selecione as colunas.', 'success');
-            
+
         } catch (error) {
             showStatus('Erro ao processar arquivo: ' + error.message, 'error');
             console.error('Error processing file:', error);
         }
     };
-    
+
     reader.onerror = () => {
         showStatus('Erro ao ler o arquivo', 'error');
     };
-    
+
+    NProgress.set(0.4);
     reader.readAsArrayBuffer(file);
+    NProgress.done();
 }
 
 // Populate column selectors with available columns
 function populateColumnSelectors(columns) {
     const selectors = ['descriptionCol', 'valueCol', 'quantityCol'];
-    
+
     selectors.forEach(selectorId => {
         const selector = document.getElementById(selectorId);
         // Clear existing options except the first one
         selector.innerHTML = '<option value="">-- Selecione a coluna --</option>';
-        
+
         // Add column options
         columns.forEach((col, index) => {
             const option = document.createElement('option');
@@ -135,35 +137,35 @@ function populateColumnSelectors(columns) {
 }
 
 // Handle skip rows change
-document.getElementById('skipRows').addEventListener('change', function() {
+document.getElementById('skipRows').addEventListener('change', function () {
     if (!currentFullData) return;
-    
+
     const skipRows = parseInt(this.value) || 0;
-    
+
     if (skipRows >= currentFullData.length) {
         showStatus('Erro: Número de linhas a pular excede o total de linhas', 'error');
         this.value = 0;
         return;
     }
-    
+
     // Update current data starting from skip row
     currentFileData = currentFullData.slice(skipRows);
-    
+
     // Get new column names
     const columns = currentFileData[0];
-    
+
     // Update row count
     document.getElementById('rowCount').textContent = currentFileData.length - 1;
-    
+
     // Repopulate column selectors
     populateColumnSelectors(columns);
-    
+
     // Reset selections
     document.getElementById('descriptionCol').value = '';
     document.getElementById('valueCol').value = '';
     document.getElementById('quantityCol').value = '';
     submitBtn.disabled = true;
-    
+
     showStatus('Colunas atualizadas com base nas linhas puladas', 'success');
 });
 
@@ -176,7 +178,7 @@ function checkFormValidity() {
     const descCol = document.getElementById('descriptionCol').value;
     const valCol = document.getElementById('valueCol').value;
     const qtyCol = document.getElementById('quantityCol').value;
-    
+
     // Check if all are selected and different
     if (descCol && valCol && qtyCol) {
         // Check for duplicates
@@ -198,14 +200,14 @@ submitBtn.addEventListener('click', async () => {
         showStatus('Erro: Nenhum arquivo carregado', 'error');
         return;
     }
-    
+
     const descCol = parseInt(document.getElementById('descriptionCol').value);
     const valCol = parseInt(document.getElementById('valueCol').value);
     const qtyCol = parseInt(document.getElementById('quantityCol').value);
     const skipRows = parseInt(document.getElementById('skipRows').value) || 0;
     const filterText = document.getElementById('filterText').value.trim();
     const isRegex = document.getElementById('isRegex').checked;
-    
+
     // Extract data with selected columns
     const headers = currentFileData[0];
     const processedData = {
@@ -229,11 +231,11 @@ submitBtn.addEventListener('click', async () => {
             quantity: row[qtyCol]
         }))
     };
-    
+
     try {
         submitBtn.disabled = true;
         showStatus('Enviando dados...', 'success');
-        
+
         const response = await fetch('/api/process-excel', {
             method: 'POST',
             headers: {
@@ -241,12 +243,12 @@ submitBtn.addEventListener('click', async () => {
             },
             body: JSON.stringify(processedData)
         });
-        
+
         if (response.ok) {
             const result = await response.json();
             showStatus('Dados processados com sucesso!', 'success');
             console.log('Resultado:', result);
-            
+
             // Redirect to results page
             setTimeout(() => {
                 window.location.href = `/results`;
@@ -267,7 +269,7 @@ submitBtn.addEventListener('click', async () => {
 function showStatus(message, type) {
     statusDiv.textContent = message;
     statusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-    
+
     if (type === 'success') {
         statusDiv.classList.add('bg-green-100', 'text-green-800');
     } else if (type === 'error') {
@@ -285,7 +287,7 @@ function resetForm() {
     columnSelection.classList.add('hidden');
     statusDiv.classList.add('hidden');
     submitBtn.disabled = true;
-    
+
     // Reset selectors
     document.getElementById('descriptionCol').value = '';
     document.getElementById('valueCol').value = '';

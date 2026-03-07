@@ -16,6 +16,7 @@ T = TypeVar("T", bound=BaseModel)
 
 # Default cache directory
 DEFAULT_CACHE_DIR = Path("cache/llm_results")
+DEFAULT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class CacheManager(Generic[T]):
