@@ -12,3 +12,4 @@ data/output/*
 .DS_Store
 cache/*
 node_modules/
+data/*
