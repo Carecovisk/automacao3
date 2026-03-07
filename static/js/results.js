@@ -240,7 +240,7 @@ function downloadCSV() {
     }
     
     // Build CSV content
-    let csv = 'Consulta,Correspondência,Score,Distance,Valor\n';
+    let csv = 'Consulta,Correspondência,Score,Distance,Valor Médio (R$)\n';
     
     resultsData.forEach(result => {
         const { query, matched_items } = result;
