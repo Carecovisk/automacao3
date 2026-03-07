@@ -8,7 +8,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from utils.ai import BasePrompt
+from utils.ai import BasePrompt, PesquisaPrompt
+from utils.domain import QueryMatch
 from utils.cache import CacheManager
 from utils.models.gemini import make_prompt
 
@@ -152,3 +153,59 @@ def apply_replacements(
                 continue
         result.append(processed)
     return result
+
+    
+def split_by_confidence(
+    matches: list[QueryMatch],
+    max_score_threshold: float = 0.9,
+) -> tuple[list[QueryMatch], list[QueryMatch]]:
+    """Split QueryMatch objects into low and high confidence groups.
+
+    A match is considered high confidence when its best candidate's score
+    meets or exceeds *max_score_threshold*. The winning candidate is marked
+    as ``matched = True``.
+
+    Args:
+        matches: List of QueryMatch objects to classify.
+        max_score_threshold: Score threshold for high confidence (default: 0.9).
+
+    Returns:
+        ``(low_confidence, high_confidence)`` — two lists of QueryMatch.
+    """
+    low_confidence: list[QueryMatch] = []
+    high_confidence: list[QueryMatch] = []
+
+    for match in matches:
+        if not match.has_candidates:
+            continue
+        best = match.best_candidate
+        if best is not None and best.score >= max_score_threshold:
+            best.matched = True
+            high_confidence.append(match)
+        else:
+            low_confidence.append(match)
+
+    return low_confidence, high_confidence
+
+
+def split_queries_by_confidence(
+    queries: list[str],
+    relevant_results: list[list[PesquisaPrompt.Item]],
+    max_score_threshold: float = 0.9,
+) -> tuple[
+    tuple[list[str], list[list[PesquisaPrompt.Item]]],
+    tuple[list[str], list[list[PesquisaPrompt.Item]]],
+]:
+    """Deprecated: use ``split_by_confidence`` with ``list[QueryMatch]`` instead.
+
+    Kept for backward compatibility with code that has not yet been migrated.
+    """
+    matches = [
+        QueryMatch(query=q, candidates=items)
+        for q, items in zip(queries, relevant_results)
+    ]
+    low, high = split_by_confidence(matches, max_score_threshold)
+    return (
+        ([m.query for m in low], [m.candidates for m in low]),
+        ([m.query for m in high], [m.candidates for m in high]),
+    )

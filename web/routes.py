@@ -4,11 +4,9 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 import pandas as pd
-from slugify import slugify
 
+from services.matching import run_matching_pipeline
 from web.schemas import PastedData, ExcelData, TaskStatus, MatchResult, MatchedItem
-from main import process_queries
-
 router = APIRouter()
 
 # Global state for data and tasks
@@ -26,131 +24,6 @@ def _update_task_status(task_id: str, **updates):
         if task_id in _task_store:
             _task_store[task_id].update(updates)
 
-
-def _insert_documents_in_batches(db, processed_documents: list[str], batch_size: int = 5000, message_callback=None):
-    """Insert documents into ChromaDB in batches to avoid memory issues with large datasets."""
-    import hashlib
-    
-    total_docs = len(processed_documents)
-    total_batches = (total_docs + batch_size - 1) // batch_size
-    for i in range(0, total_docs, batch_size):
-        batch_docs = processed_documents[i:i + batch_size]
-        batch_ids = [hashlib.md5(doc.encode()).hexdigest() for doc in batch_docs]
-        db.upsert(
-            documents=batch_docs,
-            ids=batch_ids,
-        )
-        current_batch = i // batch_size + 1
-        msg = f"Inserindo batch {current_batch}/{total_batches} ({len(batch_docs)} documentos)"
-        print(msg)
-        if message_callback:
-            message_callback(msg)
-
-
-def _process_matching_task(task_id: str, queries: list[str], documents: list[str], context: str):
-    """Background task to process query matching with progress tracking."""
-    try:
-        _update_task_status(task_id, status="running", progress=0, total=len(queries))
-        
-        # Import dependencies
-        from utils.reranker import rerank_items, filter_items_by_score, filter_items_by_score_gap
-        from utils.embeddings import emb_fn_bge_m3
-        from utils.preprocesssing import apply_replacements, get_replacements_from_llm
-        from utils.ai import PesquisaPrompt
-        from main import split_queries_by_confidence
-        import chromadb
-        import hashlib
-        from pathlib import Path
-        
-        # Define progress callback
-        def progress_callback(current: int, total: int):
-            _update_task_status(task_id, progress=current, total=total, percentage=round((current / total) * 100, 2))
-        
-        # Run the processing pipeline (simplified version of process_queries with progress tracking)
-        _update_task_status(task_id, status="running", stage="preprocessing", message="Iniciando pré-processamento...")
-        
-        # Get replacements from LLM and apply them
-        _update_task_status(task_id, stage="llm_replacements", message="Obtendo replacements do LLM...")
-
-        def llm_status_callback(msg: str):
-            _update_task_status(task_id, message=msg)
-
-        replacements = get_replacements_from_llm(documents, context=context, status_callback=llm_status_callback)
-        _update_task_status(task_id, stage="preprocessing", message="Aplicando replacements aos documentos...")
-        processed_documents = apply_replacements(documents, replacements)
-        
-        _update_task_status(task_id, stage="creating_db", message="Criando coleção vetorial...")
-        
-        # Set up the DB
-        OUTPUT_PATH = Path("./data/output")
-        OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
-        
-        chroma_client = chromadb.PersistentClient(path=str(OUTPUT_PATH / "chromadb_storage"))
-        db = chroma_client.get_or_create_collection(
-            name=slugify(context), embedding_function=emb_fn_bge_m3  # type: ignore
-        )
-        
-        # Insert documents in batches
-        _update_task_status(task_id, stage="inserting_db", message="Inserindo documentos no banco vetorial...")
-
-        def batch_message_callback(msg: str):
-            _update_task_status(task_id, message=msg)
-
-        _insert_documents_in_batches(db, processed_documents, message_callback=batch_message_callback)
-        
-        _update_task_status(task_id, stage="querying_db", message="Consultando documentos relevantes...")
-        
-        # Query relevant results
-        results = db.query(query_texts=queries, n_results=5)
-        docs = results.get("documents") or []
-        distances = results.get("distances") or []
-        
-        relevant_results = []
-        for doc_list, dist_list in zip(docs, distances):
-            items = [
-                PesquisaPrompt.Item(description=doc, distance=dist, score=0.0)
-                for doc, dist in zip(doc_list, dist_list)
-                if dist <= 0.955
-            ]
-            relevant_results.append(items)
-        
-        if not relevant_results:
-            raise ValueError("Nenhum documento relevante encontrado para as descrições fornecidas.")
-        
-        _update_task_status(task_id, stage="reranking", message="Reordenando e filtrando resultados...")
-        
-        # Rerank with progress tracking
-        reranked = rerank_items(queries, relevant_results, progress_callback=progress_callback)
-        relevant_results = filter_items_by_score(reranked, threshold=0.8)
-        relevant_results = filter_items_by_score_gap(relevant_results, gap_threshold=0.1)
-        
-        # Split by confidence
-        low_confidence, high_confidence = split_queries_by_confidence(queries, relevant_results)
-        
-        # Format results
-        high_conf_queries, high_conf_results = high_confidence
-        match_results = [
-            MatchResult(
-                query=query,
-                matched_items=[
-                    MatchedItem(description=item.description, distance=item.distance, score=item.score)
-                    for item in items
-                ]
-            )
-            for query, items in zip(high_conf_queries, high_conf_results)
-        ]
-        
-        _update_task_status(
-            task_id, 
-            status="completed", 
-            progress=len(queries), 
-            total=len(queries),
-            percentage=100.0,
-            results=[r.model_dump() for r in match_results]
-        )
-        
-    except Exception as e:
-        _update_task_status(task_id, status="failed", error=str(e))
 
 # Rota para acessar a página inicial
 @router.get("/")
@@ -170,9 +43,10 @@ async def read_results():
     if _pasted_description_column is None or _pasted_description_column not in _pasted_df.columns:
         raise HTTPException(status_code=400, detail=f"Coluna de descrição inválida: {_pasted_description_column}")
     
-    # Extract queries and documents
+    # Extract queries, documents and their associated values
     queries = _pasted_df[_pasted_description_column].tolist()
     documents = _excel_df['description'].tolist()
+    values = _excel_df['value'].tolist()
     context = _pasted_context or "product matching"
     
     # Create task
@@ -191,7 +65,11 @@ async def read_results():
         }
     
     # Start background thread
-    thread = threading.Thread(target=_process_matching_task, args=(task_id, queries, documents, context), daemon=True)
+    thread = threading.Thread(
+        target=run_matching_pipeline,
+        args=(task_id, queries, documents, values, context, _update_task_status),
+        daemon=True,
+    )
     thread.start()
     
     # Redirect to results view with task ID

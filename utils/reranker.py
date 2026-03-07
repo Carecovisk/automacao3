@@ -1,92 +1,103 @@
 from typing import Callable, Optional
+
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
+
 from utils.ai import PesquisaPrompt
+from utils.domain import QueryMatch
 
 reranker_model_name = "BAAI/bge-reranker-v2-m3"
 reranker = CrossEncoder(reranker_model_name, max_length=512)
 
 
 def rerank_items(
-    queries: list[str], 
-    items_list: list[list[PesquisaPrompt.Item]], 
-    progress_callback: Optional[Callable[[int, int], None]] = None
-) -> list[list[PesquisaPrompt.Item]]:
-    """Rerank PesquisaPrompt.Item objects using a Cross-Encoder model.
-    
+    matches: list[QueryMatch],
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+) -> list[QueryMatch]:
+    """Rerank each QueryMatch's candidates using a Cross-Encoder model.
+
     Args:
-        queries: List of query strings
-        items_list: List of lists containing PesquisaPrompt.Item objects
-        progress_callback: Optional callback function(current, total) for progress tracking
-    
+        matches: List of QueryMatch objects to rerank.
+        progress_callback: Optional callback function(current, total) for progress tracking.
+
     Returns:
-        List of lists of PesquisaPrompt.Item objects sorted by score (descending)
+        New list of QueryMatch objects with candidates sorted by score (descending).
     """
-    reranked_items = []
-    total = len(queries)
-    
-    # Use progress_callback if provided, otherwise use tqdm
-    iterator = zip(queries, items_list) if progress_callback else tqdm(zip(queries, items_list), total=total, desc="Reranking")
-    
-    for idx, (query, items) in enumerate(iterator, start=1):
-        # Create pairs of [query, item description]
-        pairs = [[query, item.description] for item in items]
-        
-        # Get scores from the reranker
+    reranked: list[QueryMatch] = []
+    total = len(matches)
+    iterator = matches if progress_callback else tqdm(matches, total=total, desc="Reranking")
+
+    for idx, match in enumerate(iterator, start=1):
+        pairs = [[match.query, c.description] for c in match.candidates]
         scores = reranker.predict(pairs)
-        
-        # Update items with reranker scores and sort
-        items_with_scores = [
-            PesquisaPrompt.Item(description=item.description, distance=item.distance, score=float(score))
-            for item, score in zip(items, scores)
+
+        scored_candidates = [
+            PesquisaPrompt.Item(
+                description=c.description,
+                distance=c.distance,
+                score=float(score),
+                value=c.value,
+            )
+            for c, score in zip(match.candidates, scores)
         ]
-        ranked = sorted(items_with_scores, key=lambda x: x.score, reverse=True)
-        reranked_items.append(ranked)
-        
-        # Call progress callback if provided
+        reranked.append(
+            QueryMatch(
+                query=match.query,
+                candidates=sorted(scored_candidates, key=lambda c: c.score, reverse=True),
+            )
+        )
+
         if progress_callback:
             progress_callback(idx, total)
-    
-    return reranked_items
+
+    return reranked
 
 
-def filter_items_by_score(items_list: list[list[PesquisaPrompt.Item]], threshold: float = 0.5) -> list[list[PesquisaPrompt.Item]]:
-    """Filter PesquisaPrompt.Item objects by score threshold.
-    
+def filter_items_by_score(
+    matches: list[QueryMatch], threshold: float = 0.5
+) -> list[QueryMatch]:
+    """Keep only candidates whose score >= *threshold* in each QueryMatch.
+
     Args:
-        items_list: List of lists containing PesquisaPrompt.Item objects
-        threshold: Minimum score threshold (default: 0.5)
-    
+        matches: List of QueryMatch objects.
+        threshold: Minimum score threshold (default: 0.5).
+
     Returns:
-        List of lists with only items that meet or exceed the threshold
+        New list of QueryMatch objects with low-scoring candidates removed.
     """
     return [
-        [item for item in items if item.score >= threshold]
-        for items in items_list
+        QueryMatch(
+            query=match.query,
+            candidates=[c for c in match.candidates if c.score >= threshold],
+        )
+        for match in matches
     ]
 
-def filter_items_by_score_gap(items_list: list[list[PesquisaPrompt.Item]], gap_threshold: float = 0.1) -> list[list[PesquisaPrompt.Item]]:
-    """Filter PesquisaPrompt.Item objects by score gap threshold.
-    
+
+def filter_items_by_score_gap(
+    matches: list[QueryMatch], gap_threshold: float = 0.1
+) -> list[QueryMatch]:
+    """Keep only candidates within *gap_threshold* of the best score in each QueryMatch.
+
     Args:
-        items_list: List of lists containing PesquisaPrompt.Item objects
-        gap_threshold: Minimum score gap threshold (default: 0.1)
-    
+        matches: List of QueryMatch objects.
+        gap_threshold: Maximum allowed score gap from the best candidate (default: 0.1).
+
     Returns:
-        List of lists with only items that have a score gap greater than or equal to the threshold
+        New list of QueryMatch objects with out-of-range candidates removed.
     """
-    filtered_items = []
-    
-    for items in items_list:
-        if not items:
-            filtered_items.append([])
+    result: list[QueryMatch] = []
+    for match in matches:
+        if not match.candidates:
+            result.append(QueryMatch(query=match.query))
             continue
-        
-        # Get the highest score in the current list
-        max_score = max(item.score for item in items)
-        
-        # Filter items based on the score gap
-        filtered = [item for item in items if (max_score - item.score) <= gap_threshold]
-        filtered_items.append(filtered)
-    
-    return filtered_items
+        max_score = max(c.score for c in match.candidates)
+        result.append(
+            QueryMatch(
+                query=match.query,
+                candidates=[
+                    c for c in match.candidates if (max_score - c.score) <= gap_threshold
+                ],
+            )
+        )
+    return result

@@ -172,12 +172,13 @@ function displayResults(results) {
             
             const { query, matched_items } = result;
             const bestScore = matched_items.length > 0 ? matched_items[0].score : 0;
+            const bestValue = matched_items.length > 0 ? matched_items[0].value : 0;
             
             // Format matched items
             const matchedItemsHTML = matched_items.slice(0, 3).map(item => {
                 return `<div class="mb-1">
                     <span class="font-medium text-gray-700">${escapeHtml(item.description)}</span>
-                    <span class="text-xs text-gray-500 ml-2">(score: ${item.score.toFixed(3)})</span>
+                    <span class="text-xs text-gray-500 ml-2">(score: ${item.score.toFixed(3)}, R$ ${item.value.toFixed(2)})</span>
                 </div>`;
             }).join('');
             
@@ -191,9 +192,14 @@ function displayResults(results) {
                     ${matchedItemsHTML}
                     ${moreItems}
                 </td>
-                <td class="py-3 px-4 text-sm text-center">
+                <td class="py-3 px-4 text-sm text-center border-r border-gray-200">
                     <span class="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                         ${bestScore.toFixed(3)}
+                    </span>
+                </td>
+                <td class="py-3 px-4 text-sm text-center">
+                    <span class="inline-block px-2 py-1 bg-blue-50 text-blue-800 rounded text-xs font-medium">
+                        R$ ${bestValue.toFixed(2)}
                     </span>
                 </td>
             `;
@@ -234,7 +240,7 @@ function downloadCSV() {
     }
     
     // Build CSV content
-    let csv = 'Consulta,Correspondência,Score,Distance\n';
+    let csv = 'Consulta,Correspondência,Score,Distance,Valor\n';
     
     resultsData.forEach(result => {
         const { query, matched_items } = result;
@@ -243,7 +249,8 @@ function downloadCSV() {
                 `"${query.replace(/"/g, '""')}"`,
                 `"${item.description.replace(/"/g, '""')}"`,
                 item.score.toFixed(4),
-                item.distance.toFixed(4)
+                item.distance.toFixed(4),
+                item.value.toFixed(2)
             ].join(',');
             csv += row + '\n';
         });

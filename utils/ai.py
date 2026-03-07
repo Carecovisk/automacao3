@@ -26,6 +26,7 @@ class PesquisaPrompt(BasePrompt):
         description: str
         distance: float
         score: float = 0.0
+        value: float = 0.0
         matched: bool = False
 
     def build(self) -> str:

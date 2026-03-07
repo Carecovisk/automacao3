@@ -42,6 +42,7 @@ class MatchedItem(BaseModel):
     description: str
     distance: float
     score: float
+    value: float = 0.0
 
 
 class MatchResult(BaseModel):
