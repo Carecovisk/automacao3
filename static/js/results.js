@@ -239,19 +239,17 @@ function downloadCSV() {
         return;
     }
     
-    // Build CSV content
-    let csv = 'Consulta,Correspondência,Score,Distance,Valor Médio (R$)\n';
+    // Build CSV content with tab separators
+    let csv = 'Consulta\tCorrespondência\tValor Médio (R$)\n';
     
     resultsData.forEach(result => {
         const { query, matched_items } = result;
         matched_items.forEach(item => {
             const row = [
-                `"${query.replace(/"/g, '""')}"`,
-                `"${item.description.replace(/"/g, '""')}"`,
-                item.score.toFixed(4),
-                item.distance.toFixed(4),
+                query,
+                item.description,
                 item.value.toFixed(2)
-            ].join(',');
+            ].join('\t');
             csv += row + '\n';
         });
     });
