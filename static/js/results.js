@@ -3,6 +3,7 @@
 let taskId = null;
 let pollingInterval = null;
 let resultsData = null;
+const deselectedItems = new Set();
 
 // Extract task ID from URL parameters on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -175,8 +176,8 @@ function displayResults(results) {
             const bestValue = matched_items.length > 0 ? matched_items[0].value : 0;
             
             // Format matched items
-            const matchedItemsHTML = matched_items.slice(0, 3).map(item => {
-                return `<div class="mb-1">
+            const matchedItemsHTML = matched_items.slice(0, 3).map((item, itemIndex) => {
+                return `<div class="mb-1 cursor-pointer select-none" data-result-index="${index}" data-item-index="${itemIndex}" onclick="toggleItem(${index}, ${itemIndex})">
                     <span class="font-medium text-gray-700">${escapeHtml(item.description)}</span>
                     <span class="text-xs text-gray-500 ml-2">(score: ${item.score.toFixed(3)}, R$ ${item.value.toFixed(2)})</span>
                 </div>`;
@@ -240,18 +241,22 @@ function downloadCSV() {
     }
     
     // Build CSV content with tab separators
-    let csv = 'Consulta\tCorrespondência\tValor Médio (R$)\n';
+    let csv = 'Consulta\tCorrespondência\tScore\tValor Médio (R$)\n';
     
-    resultsData.forEach(result => {
+    resultsData.forEach((result, resultIndex) => {
         const { query, matched_items } = result;
-        matched_items.forEach(item => {
+        const visibleItems = matched_items.slice(0, 3);
+        const bestItem = visibleItems.find((_, itemIndex) => !deselectedItems.has(`${resultIndex}-${itemIndex}`));
+        if (bestItem) {
+            console.log('Adding to CSV:', query, bestItem.description, bestItem.score, bestItem.value);
             const row = [
                 query,
-                item.description,
-                item.value.toFixed(2)
+                bestItem.description,
+                bestItem.score.toFixed(4),
+                bestItem.value.toFixed(2)
             ].join('\t');
             csv += row + '\n';
-        });
+        }
     });
     
     // Create download link
@@ -266,6 +271,27 @@ function downloadCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// Toggle selection state of a matched item
+function toggleItem(resultIndex, itemIndex) {
+    const key = `${resultIndex}-${itemIndex}`;
+    const el = document.querySelector(`[data-result-index="${resultIndex}"][data-item-index="${itemIndex}"]`);
+    console.log('Toggling item:', key, 'Current deselected:', deselectedItems.has(key));
+
+    const classesToToggle = ['line-through', 'text-gray-400', 'opacity-50', 'bg-red-50'];
+
+    if (deselectedItems.has(key)) {
+        deselectedItems.delete(key);
+        if (el) {
+            el.classList.remove(...classesToToggle);
+        }
+    } else {
+        deselectedItems.add(key);
+        if (el) {
+            el.classList.add(...classesToToggle);
+        }
+    }
 }
 
 // Helper function to escape HTML
