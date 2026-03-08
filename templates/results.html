@@ -1,28 +1,15 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processando - Correspondência de Produtos</title>
-    <link rel="stylesheet" href="/static/css/tailwind.css" />
-</head>
-<body class="bg-gray-100 p-5">
+{% extends "base.html" %}
 
-    <!-- Nav bar -->
-    <nav class="bg-white rounded-lg shadow-md mb-5 px-5 py-3 flex gap-6 text-sm font-medium">
-        <a href="/" class="text-gray-600 hover:text-green-600 transition-colors">Home</a>
-        <a href="/upload" class="text-gray-600 hover:text-green-600 transition-colors">Upload</a>
-        <a href="/results-view" class="text-green-600 font-semibold">Resultados</a>
-        <a href="/config" class="text-gray-600 hover:text-green-600 transition-colors">Configurações</a>
-    </nav>
+{% block title %}Processando - Correspondência de Produtos{% endblock %}
 
+{% block content %}
     <div class="max-w-6xl mx-auto">
         <h1 class="text-2xl font-bold mb-5 text-gray-800">Processamento de Correspondências</h1>
 
         <!-- Progress Section -->
         <div id="progressSection" class="bg-white p-5 rounded-lg shadow-md mb-5">
             <h2 class="text-xl font-semibold mb-3 text-gray-700">Status do Processamento</h2>
-            
+
             <div class="mb-3">
                 <div class="flex justify-between mb-1">
                     <span id="statusText" class="text-sm font-medium text-gray-700">Inicializando...</span>
@@ -32,11 +19,11 @@
                     <div id="progressBar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
             </div>
-            
+
             <div class="text-sm text-gray-600">
                 <span id="progressText">0 / 0</span> itens processados
             </div>
-            
+
             <div id="stageText" class="text-sm text-gray-500 mt-2 italic"></div>
             <div id="messageText" class="text-sm text-gray-400 mt-1"></div>
         </div>
@@ -58,10 +45,10 @@
                     Baixar CSV
                 </button>
             </div>
-            
+
             <div id="resultsCount" class="text-sm text-gray-600 mb-1"></div>
             <p class="text-xs text-gray-400 italic mb-3">Clique em uma correspondência para excluí-la da exportação. Apenas a correspondência de maior score não excluída será exportada por consulta.</p>
-            
+
             <div class="overflow-x-auto">
                 <table id="resultsTable" class="min-w-full bg-white border border-gray-300">
                     <thead class="bg-gray-100">
@@ -90,8 +77,8 @@
             </button>
         </div>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script src="/static/js/results.js"></script>
-
-</body>
-</html>
+{% endblock %}

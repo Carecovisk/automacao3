@@ -1,14 +1,16 @@
 import uuid
 import threading
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 import pandas as pd
 
 from services.matching import run_matching_pipeline
 from utils.config import load_config, save_config
 from web.schemas import PastedData, ExcelData, TaskStatus, MatchResult, MatchedItem, ConfigSchema
 router = APIRouter()
+templates = Jinja2Templates(directory="templates")
 
 # Global state for data and tasks
 _pasted_df: pd.DataFrame | None = None
@@ -29,8 +31,8 @@ def _update_task_status(task_id: str, **updates):
 
 # Rota para acessar a página inicial
 @router.get("/")
-async def read_index():
-    return FileResponse("static/html/home.html")
+async def read_index(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request, "active_page": "home"})
 
 
 @router.get("/results")
@@ -59,13 +61,14 @@ async def read_results():
         _task_store[task_id] = {
             "task_id": task_id,
             "status": "pending",
+            "context": context,
             "progress": 0,
             "total": len(queries),
             "percentage": 0.0,
             "results": None,
             "error": None,
             "stage": "initializing",
-            "message": None
+            "message": None,
         }
     
     # Start background thread
@@ -81,13 +84,13 @@ async def read_results():
 
 
 @router.get("/results-view")
-async def results_view(taskId: Optional[str] = Query(default=None)):
+async def results_view(request: Request, taskId: Optional[str] = Query(default=None)):
     """Serve the results HTML page. If no taskId is given, redirect to the last task."""
     if not taskId:
         if _last_task_id is None:
             raise HTTPException(status_code=404, detail="Nenhuma tarefa encontrada.")
         return RedirectResponse(url=f"/results-view?taskId={_last_task_id}", status_code=302)
-    return FileResponse("static/html/results.html")
+    return templates.TemplateResponse("results.html", {"request": request, "active_page": "results"})
 
 
 @router.get("/api/task-status/{task_id}")
@@ -104,14 +107,14 @@ async def get_task_status(task_id: str):
 
 # Rota para acessar a página de upload
 @router.get("/upload")
-async def read_upload():
-    return FileResponse("static/html/upload.html")
+async def read_upload(request: Request):
+    return templates.TemplateResponse("upload.html", {"request": request, "active_page": "upload"})
 
 
 # Rota para acessar a página de configurações
 @router.get("/config")
-async def read_config():
-    return FileResponse("static/html/config.html")
+async def read_config(request: Request):
+    return templates.TemplateResponse("config.html", {"request": request, "active_page": "config"})
 
 
 @router.get("/api/config")

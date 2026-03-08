@@ -1,33 +1,24 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload e Configuração de Colunas</title>
-    <link rel="stylesheet" href="/static/css/tailwind.css" />
+{% extends "base.html" %}
+
+{% block title %}Upload e Configuração de Colunas{% endblock %}
+
+{% block extra_head %}
     <script src="/static/js/vendor/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="/static/css/nprogress.css" />
     <script src="/static/js/vendor/nprogress.js"></script>
-</head>
-<body class="bg-gray-100 p-5">
+{% endblock %}
 
-    <!-- Nav bar -->
-    <nav class="bg-white rounded-lg shadow-md mb-5 px-5 py-3 flex gap-6 text-sm font-medium">
-        <a href="/" class="text-gray-600 hover:text-green-600 transition-colors">Home</a>
-        <a href="/upload" class="text-green-600 font-semibold">Upload</a>
-        <a href="/results-view" class="text-gray-600 hover:text-green-600 transition-colors">Resultados</a>
-        <a href="/config" class="text-gray-600 hover:text-green-600 transition-colors">Configurações</a>
-    </nav>
-
+{% block content %}
     <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-md">
         <h2 class="text-gray-800 text-2xl font-semibold mb-5">Upload e Configuração de Arquivo Excel</h2>
-        
+
         <div class="border-2 border-dashed border-green-500 p-10 text-center rounded-lg mb-8 cursor-pointer transition-colors hover:bg-green-50" id="uploadArea">
             <p class="text-base">📂 Clique aqui ou arraste um arquivo Excel (.xlsx, .xls)</p>
             <p class="text-sm text-gray-600 mt-2">O arquivo será processado localmente no seu navegador</p>
         </div>
-        
+
         <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
-        
+
         <div class="hidden mt-8" id="columnSelection">
             <div class="bg-green-50 p-4 rounded-lg mb-5">
                 <p class="my-1 text-green-800"><strong>Arquivo:</strong> <span id="fileName"></span></p>
@@ -35,17 +26,18 @@
                 <p class="my-1 text-green-800"><strong>Linhas:</strong> <span id="rowCount"></span></p>
                 <p class="my-1 text-green-800"><strong>Colunas:</strong> <span id="colCount"></span></p>
             </div>
-            
-            <div class="mb-5">                <label for="skipRows" class="block mb-2 font-bold text-gray-600">Pular Linhas Iniciais:</label>
+
+            <div class="mb-5">
+                <label for="skipRows" class="block mb-2 font-bold text-gray-600">Pular Linhas Iniciais:</label>
                 <input type="number" id="skipRows" min="0" value="0" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                 <p class="text-sm text-gray-500 mt-1">Número de linhas a pular antes do cabeçalho (padrão: 0)</p>
             </div>
-            
+
             <div class="mb-5">
                 <label for="filterText" class="block mb-2 font-bold text-gray-600">Filtrar Descrições (opcional):</label>
                 <input type="text" id="filterText" placeholder="Digite o texto para filtrar as descrições" class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                 <p class="text-sm text-gray-500 mt-1">Apenas linhas contendo este texto serão processadas</p>
-                
+
                 <div class="flex items-center mt-3">
                     <input type="checkbox" id="isRegex" class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2">
                     <label for="isRegex" class="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
@@ -54,21 +46,21 @@
                     <span class="ml-2 text-gray-500 cursor-help" title="Uma expressão regular permite padrões de busca avançados. Exemplos: '^Teste' (começa com Teste), 'A|B' (contém A ou B), '\d+' (contém números). Use apenas se souber o que está fazendo.">ℹ️</span>
                 </div>
             </div>
-           
+
             <div class="mb-5">
                 <label for="descriptionCol" class="block mb-2 font-bold text-gray-600">Coluna de Descrição:</label>
                 <select id="descriptionCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option value="">-- Selecione a coluna --</option>
                 </select>
             </div>
-            
+
             <div class="mb-5">
                 <label for="quantityCol" class="block mb-2 font-bold text-gray-600">Coluna de Quantidade:</label>
                 <select id="quantityCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option value="">-- Selecione a coluna --</option>
                 </select>
             </div>
-            
+
             <div class="mb-5">
                 <label for="valueCol" class="block mb-2 font-bold text-gray-600">Coluna de Valor:</label>
                 <select id="valueCol" required class="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
@@ -77,12 +69,12 @@
             </div>
 
             <button class="w-full py-3 px-8 bg-green-500 text-white rounded-md cursor-pointer text-base hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors" id="submitBtn" disabled>Processar Arquivo</button>
-            
+
             <div id="status" class="mt-4 p-2.5 rounded-md text-center hidden"></div>
         </div>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script src="/static/js/upload.js"></script>
-
-</body>
-</html>
+{% endblock %}

@@ -1,23 +1,14 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Página Inicial</title>
-    <link rel="stylesheet" href="/static/css/tailwind.css" />
+{% extends "base.html" %}
+
+{% block title %}Página Inicial{% endblock %}
+
+{% block extra_head %}
     <link rel="stylesheet" href="/static/css/nprogress.css" />
     <script src="/static/js/vendor/nprogress.js"></script>
     <script src="/static/js/vendor/xlsx.full.min.js"></script>
-</head>
-<body class="bg-gray-100 p-5">
+{% endblock %}
 
-    <!-- Nav bar -->
-    <nav class="bg-white rounded-lg shadow-md mb-5 px-5 py-3 flex gap-6 text-sm font-medium">
-        <a href="/" class="text-green-600 font-semibold">Home</a>
-        <a href="/upload" class="text-gray-600 hover:text-green-600 transition-colors">Upload</a>
-        <a href="/results-view" class="text-gray-600 hover:text-green-600 transition-colors">Resultados</a>
-        <a href="/config" class="text-gray-600 hover:text-green-600 transition-colors">Configurações</a>
-    </nav>
-
+{% block content %}
     <div class="bg-white p-5 rounded-lg shadow-md mb-5">
         <h2 class="text-xl font-semibold mb-3">Passo a Passo:</h2>
         <ol class="list-decimal list-inside space-y-2">
@@ -33,8 +24,8 @@
         <button id="confirmBtn" class="hidden py-2.5 px-5 bg-green-500 text-white border-none rounded-md cursor-pointer text-sm hover:bg-green-600 transition-colors">Confirmar</button>
     </div>
     <pre id="output" class="bg-gray-800 text-gray-300 p-4 rounded-md overflow-auto max-h-125">{}</pre>
+{% endblock %}
 
+{% block scripts %}
     <script src="/static/js/home.js"></script>
-
-</body>
-</html>
+{% endblock %}
