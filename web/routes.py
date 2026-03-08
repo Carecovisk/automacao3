@@ -19,7 +19,6 @@ _pasted_context: str | None = None
 _pasted_description_column: str | None = None
 _task_store: Dict[str, Dict[str, Any]] = {}
 _task_lock = threading.Lock()
-_last_task_id: str | None = None
 
 
 def _update_task_status(task_id: str, **updates):
@@ -55,8 +54,6 @@ async def read_results():
     
     # Create task
     task_id = str(uuid.uuid4())
-    global _last_task_id
-    _last_task_id = task_id
     with _task_lock:
         _task_store[task_id] = {
             "task_id": task_id,
@@ -85,12 +82,18 @@ async def read_results():
 
 @router.get("/results-view")
 async def results_view(request: Request, taskId: Optional[str] = Query(default=None)):
-    """Serve the results HTML page. If no taskId is given, redirect to the last task."""
+    """Serve the results HTML page. If no taskId is given, show the task list page."""
     if not taskId:
-        if _last_task_id is None:
-            raise HTTPException(status_code=404, detail="Nenhuma tarefa encontrada.")
-        return RedirectResponse(url=f"/results-view?taskId={_last_task_id}", status_code=302)
+        return templates.TemplateResponse("tasks.html", {"request": request, "active_page": "results"})
     return templates.TemplateResponse("results.html", {"request": request, "active_page": "results"})
+
+
+@router.get("/api/tasks")
+async def list_tasks():
+    """Return all tasks in the task store."""
+    with _task_lock:
+        tasks = list(_task_store.values())
+    return JSONResponse(content=tasks)
 
 
 @router.get("/api/task-status/{task_id}")

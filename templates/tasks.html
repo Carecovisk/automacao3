@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Tarefas - Correspondência de Produtos{% endblock %}
+
+{% block content %}
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-5 text-gray-800">Tarefas</h1>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="bg-white p-10 rounded-lg shadow-md text-center hidden">
+            <p class="text-gray-500 text-lg">Nenhuma tarefa encontrada.</p>
+        </div>
+
+        <!-- Tasks table -->
+        <div id="tasksContainer" class="bg-white rounded-lg shadow-md overflow-hidden hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-300">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="py-3 px-4 border-b border-r border-gray-300 text-left text-sm font-semibold text-gray-700">Contexto</th>
+                            <th class="py-3 px-4 border-b border-r border-gray-300 text-left text-sm font-semibold text-gray-700">Status</th>
+                            <th class="py-3 px-4 border-b border-r border-gray-300 text-left text-sm font-semibold text-gray-700">Progresso</th>
+                            <th class="py-3 px-4 border-b border-gray-300 text-left text-sm font-semibold text-gray-700">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksBody">
+                        <!-- Populated by tasks.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-5 text-right">
+            <a href="/upload" class="py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-block">
+                Nova Pesquisa
+            </a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/tasks.js"></script>
+{% endblock %}
