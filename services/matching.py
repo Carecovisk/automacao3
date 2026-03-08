@@ -6,16 +6,19 @@ import chromadb
 from slugify import slugify
 
 from utils.ai import PesquisaPrompt
-from utils.config import load_config
+from utils.config import OUTPUT_PATH, load_config
 from utils.domain import QueryMatch
 from utils.embeddings import emb_fn_bge_m3
 from utils.preprocesssing import apply_replacements, get_replacements_from_llm, split_by_confidence
 from utils.reranker import filter_items_by_score, filter_items_by_score_gap, rerank_items
 from web.schemas import MatchedItem, MatchResult
+import traceback
 
 TaskUpdater = Callable[..., None]
 
-_OUTPUT_PATH = Path("./data/output")
+DB_STORAGE_PATH = OUTPUT_PATH / "chromadb_storage"
+DB_STORAGE_PATH.mkdir(parents=True, exist_ok=True)
+chroma_client = chromadb.PersistentClient(path=DB_STORAGE_PATH)
 
 
 def _insert_documents_in_batches(
@@ -50,6 +53,7 @@ def run_matching_pipeline(
     values: list[float],
     context: str,
     task_updater: TaskUpdater,
+    excel_file_name: str | None = None,
 ) -> None:
     """Execute the full document-matching pipeline for *task_id*.
 
@@ -90,12 +94,9 @@ def run_matching_pipeline(
 
         # --- Stage 2: Vector DB ----------------------------------------------
         task_updater(task_id, stage="creating_db", message="Criando coleção vetorial...")
-        DB_STORAGE_PATH = _OUTPUT_PATH / "chromadb_storage"
-        DB_STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 
-        chroma_client = chromadb.PersistentClient(path=DB_STORAGE_PATH)
         db = chroma_client.get_or_create_collection(
-            name=slugify(context), embedding_function=emb_fn_bge_m3  # type: ignore
+            name=slugify(excel_file_name), embedding_function=emb_fn_bge_m3  # type: ignore
         )
 
         task_updater(task_id, stage="inserting_db", message="Inserindo documentos no banco vetorial...")
@@ -181,5 +182,8 @@ def run_matching_pipeline(
             results=[r.model_dump() for r in match_results],
         )
 
+
     except Exception as e:
+        traceback.print_exc()
+        print(f"Error in matching pipeline for task {task_id}: {e}")
         task_updater(task_id, status="failed", error=str(e))

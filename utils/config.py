@@ -12,7 +12,9 @@ import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-_CONFIG_PATH = Path(__file__).parent.parent / "config.json"
+OUTPUT_PATH = Path.home() / ".automacao3" / "output"
+OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+_CONFIG_PATH = OUTPUT_PATH / "config.json"
 
 _DEFAULTS: dict = {
     "use_llm": False,

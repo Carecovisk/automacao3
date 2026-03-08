@@ -12,10 +12,12 @@ from typing import Any, Callable, Generic, TypeVar
 
 from pydantic import BaseModel
 
+from utils.config import OUTPUT_PATH
+
 T = TypeVar("T", bound=BaseModel)
 
 # Default cache directory
-DEFAULT_CACHE_DIR = Path("cache/llm_results")
+DEFAULT_CACHE_DIR = OUTPUT_PATH / "cache" / "llm_results"
 DEFAULT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -28,7 +30,7 @@ class CacheManager(Generic[T]):
         result_type: Pydantic model class for the cached data
     """
 
-    def __init__(self, cache_dir: Path | str, result_type: type[T]):
+    def __init__(self, cache_dir: Path, result_type: type[T]):
         self.cache_dir = Path(cache_dir)
         self.result_type = result_type
         self.cache_dir.mkdir(parents=True, exist_ok=True)

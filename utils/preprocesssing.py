@@ -4,13 +4,12 @@ import re
 import uuid
 from collections.abc import Callable, Hashable
 from dataclasses import dataclass
-from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 from utils.ai import BasePrompt, PesquisaPrompt
 from utils.domain import QueryMatch
-from utils.cache import CacheManager
+from utils.cache import DEFAULT_CACHE_DIR, CacheManager
 
 
 class Replacement(BaseModel):
@@ -47,7 +46,7 @@ class PreprocessingPrompt(BasePrompt):
 
 # Initialize cache manager for replacements
 _replacement_cache = CacheManager(
-    cache_dir=Path("cache/llm_replacements"), result_type=Replacement
+    cache_dir=DEFAULT_CACHE_DIR, result_type=Replacement
 )
 
 

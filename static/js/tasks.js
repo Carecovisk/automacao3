@@ -59,7 +59,7 @@ function renderTasks(tasks) {
 
     tasksBody.innerHTML = '';
     tasks.forEach(task => {
-        const { task_id, context, status, progress, total, percentage } = task;
+        const { task_id, file_name, status, progress, total, percentage } = task;
         const statusLabel = STATUS_MAP[status] || status;
         const statusColor = STATUS_COLORS[status] || 'bg-gray-100 text-gray-700';
         const pct = typeof percentage === 'number' ? percentage.toFixed(1) : '0.0';
@@ -68,7 +68,7 @@ function renderTasks(tasks) {
         const tr = document.createElement('tr');
         tr.className = 'border-b border-gray-200 hover:bg-gray-50';
         tr.innerHTML = `
-            <td class="py-3 px-4 text-sm text-gray-800 border-r border-gray-200 max-w-xs truncate" title="${escapeHtml(context)}">${escapeHtml(context)}</td>
+            <td class="py-3 px-4 text-sm text-gray-800 border-r border-gray-200 max-w-xs truncate" title="${escapeHtml(file_name)}">${escapeHtml(file_name)}</td>
             <td class="py-3 px-4 text-sm border-r border-gray-200">
                 <span class="inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColor}">${statusLabel}</span>
             </td>

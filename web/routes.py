@@ -14,6 +14,7 @@ templates = Jinja2Templates(directory="templates")
 
 # Global state for data and tasks
 _pasted_df: pd.DataFrame | None = None
+_excel_file_name: str | None = None
 _excel_df: pd.DataFrame | None = None
 _pasted_context: str | None = None
 _pasted_description_column: str | None = None
@@ -37,7 +38,7 @@ async def read_index(request: Request):
 @router.get("/results")
 async def read_results():
     """Start background task to process matching and redirect to results page with task ID."""
-    global _pasted_df, _excel_df, _pasted_context, _pasted_description_column
+    global _pasted_df, _excel_df, _pasted_context, _pasted_description_column, _excel_file_name
     
     # Validate data exists
     if _pasted_df is None or _excel_df is None:
@@ -66,12 +67,15 @@ async def read_results():
             "error": None,
             "stage": "initializing",
             "message": None,
+            "file_name": _excel_file_name,
         }
     
+    
+    print("Nome do arquivo Excel:", _excel_file_name)
     # Start background thread
     thread = threading.Thread(
         target=run_matching_pipeline,
-        args=(task_id, queries, documents, values, context, _update_task_status),
+        args=(task_id, queries, documents, values, context, _update_task_status, _excel_file_name),
         daemon=True,
     )
     thread.start()
@@ -180,7 +184,7 @@ async def receive_excel_data(payload: ExcelData):
     Recebe os dados do arquivo Excel com as colunas selecionadas.
     """
     # TODO: Adicionar lógica de processamento do Excel
-    global _excel_df
+    global _excel_df, _excel_file_name
     _excel_df = pd.DataFrame([row.model_dump() for row in payload.data])
     
     # Apply filter if provided
@@ -205,6 +209,7 @@ async def receive_excel_data(payload: ExcelData):
     _excel_df["mean_value"] = _excel_df["total_value"] / _excel_df["quantity"]
     _excel_df = _excel_df.drop(columns=["total_value", "quantity"])
     _excel_df = _excel_df.dropna()
+    _excel_file_name = payload.fileName or "uploaded_file.xlsx"
 
     return {
         "status": "success",
