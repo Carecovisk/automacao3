@@ -13,3 +13,4 @@ data/output/*
 cache/*
 node_modules/
 data/*
+/config.json

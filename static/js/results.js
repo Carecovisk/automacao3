@@ -19,12 +19,31 @@ document.addEventListener('DOMContentLoaded', () => {
     startPolling();
 });
 
+// Disable or enable nav links
+function setNavLinksEnabled(enabled) {
+    document.querySelectorAll('nav a').forEach(link => {
+        if (enabled) {
+            link.removeAttribute('aria-disabled');
+            link.style.pointerEvents = '';
+            link.style.opacity = '';
+            link.style.cursor = '';
+        } else {
+            link.setAttribute('aria-disabled', 'true');
+            link.style.pointerEvents = 'none';
+            link.style.opacity = '0.4';
+            link.style.cursor = 'not-allowed';
+        }
+    });
+}
+
 // Start polling for task status
 function startPolling() {
     if (!taskId) {
         showError('Task ID inválido');
         return;
     }
+
+    setNavLinksEnabled(false);
     
     // Poll immediately
     pollTaskStatus();
@@ -39,6 +58,7 @@ function stopPolling() {
         clearInterval(pollingInterval);
         pollingInterval = null;
     }
+    setNavLinksEnabled(true);
 }
 
 // Poll task status from server

@@ -1,7 +1,0 @@
-{
-  "use_llm": false,
-  "gemini_api_key": "",
-  "use_llm_abbreviation_expansion": false,
-  "use_llm_judge": false,
-  "high_confidence_threshold": 0.9
-}

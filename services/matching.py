@@ -21,6 +21,7 @@ _OUTPUT_PATH = Path("./data/output")
 def _insert_documents_in_batches(
     db,
     processed_documents: list[str],
+    original_documents: list[str],
     batch_size: int = 5000,
     message_callback: Callable[[str], None] | None = None,
 ) -> None:
@@ -30,7 +31,9 @@ def _insert_documents_in_batches(
 
     for i in range(0, total_docs, batch_size):
         batch_docs = processed_documents[i : i + batch_size]
-        batch_ids = [hashlib.md5(doc.encode()).hexdigest() for doc in batch_docs]
+        batch_originals = original_documents[i : i + batch_size]
+        # ID is derived from the original text — stable across replacement changes
+        batch_ids = [hashlib.md5(doc.encode()).hexdigest() for doc in batch_originals]
         db.upsert(documents=batch_docs, ids=batch_ids)
 
         current_batch = i // batch_size + 1
@@ -99,6 +102,7 @@ def run_matching_pipeline(
         _insert_documents_in_batches(
             db,
             processed_documents,
+            documents,
             message_callback=lambda msg: task_updater(task_id, message=msg),
         )
 
