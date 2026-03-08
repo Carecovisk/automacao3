@@ -1,7 +1,7 @@
 import uuid
 import threading
-from typing import Dict, Any
-from fastapi import APIRouter, HTTPException
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 import pandas as pd
 
@@ -17,6 +17,7 @@ _pasted_context: str | None = None
 _pasted_description_column: str | None = None
 _task_store: Dict[str, Dict[str, Any]] = {}
 _task_lock = threading.Lock()
+_last_task_id: str | None = None
 
 
 def _update_task_status(task_id: str, **updates):
@@ -52,6 +53,8 @@ async def read_results():
     
     # Create task
     task_id = str(uuid.uuid4())
+    global _last_task_id
+    _last_task_id = task_id
     with _task_lock:
         _task_store[task_id] = {
             "task_id": task_id,
@@ -78,8 +81,12 @@ async def read_results():
 
 
 @router.get("/results-view")
-async def results_view():
-    """Serve the results HTML page."""
+async def results_view(taskId: Optional[str] = Query(default=None)):
+    """Serve the results HTML page. If no taskId is given, redirect to the last task."""
+    if not taskId:
+        if _last_task_id is None:
+            raise HTTPException(status_code=404, detail="Nenhuma tarefa encontrada.")
+        return RedirectResponse(url=f"/results-view?taskId={_last_task_id}", status_code=302)
     return FileResponse("static/html/results.html")
 
 
