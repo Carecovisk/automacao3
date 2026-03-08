@@ -6,6 +6,7 @@ import chromadb
 from slugify import slugify
 
 from utils.ai import PesquisaPrompt
+from utils.config import load_config
 from utils.domain import QueryMatch
 from utils.embeddings import emb_fn_bge_m3
 from utils.preprocesssing import apply_replacements, get_replacements_from_llm, split_by_confidence
@@ -62,13 +63,18 @@ def run_matching_pipeline(
     try:
         task_updater(task_id, status="running", progress=0, total=len(queries))
 
+        config = load_config()
+
         # --- Stage 1: LLM replacements ---------------------------------------
         task_updater(task_id, stage="llm_replacements", message="Obtendo replacements do LLM...")
 
         def _llm_status(msg: str) -> None:
             task_updater(task_id, message=msg)
 
-        replacements = get_replacements_from_llm(documents, context=context, status_callback=_llm_status)
+        if config.use_llm and config.use_llm_abbreviation_expansion:
+            replacements = get_replacements_from_llm(documents, context=context, status_callback=_llm_status)
+        else:
+            replacements = []
 
         task_updater(task_id, stage="preprocessing", message="Aplicando replacements aos documentos...")
         processed_documents = apply_replacements(documents, replacements)
@@ -138,7 +144,12 @@ def run_matching_pipeline(
         matches = filter_items_by_score_gap(matches, gap_threshold=0.1)
 
         # --- Stage 5: Confidence split ---------------------------------------
-        _, high_confidence = split_by_confidence(matches)
+        _, high_confidence = split_by_confidence(matches, max_score_threshold=config.high_confidence_threshold)
+
+        # --- LLM judge stub (gated on config) --------------------------------
+        if config.use_llm and config.use_llm_judge:
+            # TODO: implement execution logic for LLM judge on low-confidence candidates
+            pass
 
         # --- Serialise results -----------------------------------------------
         match_results = [

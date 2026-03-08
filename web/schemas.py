@@ -50,6 +50,14 @@ class MatchResult(BaseModel):
     matched_items: List[MatchedItem]
 
 
+class ConfigSchema(BaseModel):
+    use_llm: Optional[bool] = None
+    gemini_api_key: Optional[str] = None
+    use_llm_abbreviation_expansion: Optional[bool] = None
+    use_llm_judge: Optional[bool] = None
+    high_confidence_threshold: Optional[float] = None
+
+
 class TaskStatus(BaseModel):
     task_id: str
     status: str  # "pending", "running", "completed", "failed"

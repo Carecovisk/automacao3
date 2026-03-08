@@ -7,8 +7,9 @@ from google import genai
 
 sys.path.append(str(Path(__file__).parent.parent))
 from ai import BasePrompt, Candidates, PesquisaPrompt, PromptResult
+from config import load_config
 
-client = genai.Client()
+client = genai.Client(api_key=load_config().gemini_api_key or None)
 
 
 def make_prompt(prompt: BasePrompt) -> BasePrompt.PromptResult:

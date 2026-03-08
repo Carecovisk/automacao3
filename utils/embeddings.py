@@ -2,12 +2,12 @@ from google import genai
 from google.genai import types
 from chromadb import EmbeddingFunction, Documents, Embeddings
 from chromadb.utils import embedding_functions
-
+from utils.config import load_config
 
 
 class GeminiEmbeddingFunction(EmbeddingFunction):
 
-  client = genai.Client()
+  client = genai.Client(api_key=load_config().gemini_api_key or None)
 
   def __call__(self, input: Documents) -> Embeddings:
     EMBEDDING_MODEL_ID = "gemini-embedding-001"

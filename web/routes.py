@@ -6,7 +6,8 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 import pandas as pd
 
 from services.matching import run_matching_pipeline
-from web.schemas import PastedData, ExcelData, TaskStatus, MatchResult, MatchedItem
+from utils.config import load_config, save_config
+from web.schemas import PastedData, ExcelData, TaskStatus, MatchResult, MatchedItem, ConfigSchema
 router = APIRouter()
 
 # Global state for data and tasks
@@ -98,6 +99,44 @@ async def get_task_status(task_id: str):
 @router.get("/upload")
 async def read_upload():
     return FileResponse("static/html/upload.html")
+
+
+# Rota para acessar a página de configurações
+@router.get("/config")
+async def read_config():
+    return FileResponse("static/html/config.html")
+
+
+@router.get("/api/config")
+async def get_config():
+    """Return current config; mask gemini_api_key so the key is never sent to the browser."""
+    cfg = load_config()
+    data = {
+        "use_llm": cfg.use_llm,
+        "gemini_api_key": "***" if cfg.gemini_api_key else "",
+        "use_llm_abbreviation_expansion": cfg.use_llm_abbreviation_expansion,
+        "use_llm_judge": cfg.use_llm_judge,
+        "high_confidence_threshold": cfg.high_confidence_threshold,
+    }
+    return JSONResponse(content=data)
+
+
+@router.post("/api/config")
+async def post_config(payload: ConfigSchema):
+    """Persist config settings. If gemini_api_key equals '***', keep the stored key unchanged."""
+    cfg = load_config()
+    if payload.use_llm is not None:
+        cfg.use_llm = payload.use_llm
+    if payload.gemini_api_key is not None and payload.gemini_api_key != "***":
+        cfg.gemini_api_key = payload.gemini_api_key
+    if payload.use_llm_abbreviation_expansion is not None:
+        cfg.use_llm_abbreviation_expansion = payload.use_llm_abbreviation_expansion
+    if payload.use_llm_judge is not None:
+        cfg.use_llm_judge = payload.use_llm_judge
+    if payload.high_confidence_threshold is not None:
+        cfg.high_confidence_threshold = payload.high_confidence_threshold
+    save_config(cfg)
+    return JSONResponse(content={"ok": True})
 
 
 # Rota para confirmar e processar dados
