@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 from utils.ai import BasePrompt, PesquisaPrompt
 from utils.domain import QueryMatch
 from utils.cache import CacheManager
-from utils.models.gemini import make_prompt
 
 
 class Replacement(BaseModel):
@@ -71,6 +70,8 @@ def get_replacements_from_llm(
     Returns:
         List of Replacement objects containing regex patterns and replacements
     """
+
+    from utils.models.gemini import make_prompt
 
     # Try to load from cache first
     if use_cache:
