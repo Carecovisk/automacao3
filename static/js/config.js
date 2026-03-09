@@ -5,7 +5,6 @@ const useLlmCheckbox = document.getElementById('use_llm');
 const llmFields = document.getElementById('llm-fields');
 const geminiKeyInput = document.getElementById('gemini_api_key');
 const abbrevCheckbox = document.getElementById('use_llm_abbreviation_expansion');
-const judgeCheckbox = document.getElementById('use_llm_judge');
 const thresholdInput = document.getElementById('high_confidence_threshold');
 const toast = document.getElementById('toast');
 
@@ -14,7 +13,6 @@ function applyLlmToggle(enabled) {
     llmFields.style.opacity = enabled ? '1' : '0.45';
     geminiKeyInput.disabled = !enabled;
     abbrevCheckbox.disabled = !enabled;
-    judgeCheckbox.disabled = !enabled;
 }
 
 /** Display a temporary notification message. */
@@ -38,7 +36,6 @@ async function loadConfig() {
         useLlmCheckbox.checked = !!data.use_llm;
         geminiKeyInput.value = data.gemini_api_key ?? '';
         abbrevCheckbox.checked = !!data.use_llm_abbreviation_expansion;
-        judgeCheckbox.checked = !!data.use_llm_judge;
         thresholdInput.value = data.high_confidence_threshold ?? 0.9;
 
         applyLlmToggle(useLlmCheckbox.checked);
@@ -60,8 +57,7 @@ form.addEventListener('submit', async (e) => {
         use_llm: useLlmCheckbox.checked,
         gemini_api_key: geminiKeyInput.value,
         use_llm_abbreviation_expansion: abbrevCheckbox.checked,
-        use_llm_judge: judgeCheckbox.checked,
-        high_confidence_threshold: parseFloat(thresholdInput.value),
+        high_confidence_threshold: parseFloat(thresholdInput?.value.replace(',', '.')) || 0.9,
     };
 
     try {

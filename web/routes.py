@@ -1,5 +1,7 @@
+import sys
 import uuid
 import threading
+from pathlib import Path
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -8,9 +10,12 @@ import pandas as pd
 
 from services.matching import run_matching_pipeline
 from utils.config import load_config, save_config
-from web.schemas import PastedData, ExcelData, TaskStatus, MatchResult, MatchedItem, ConfigSchema
+from web.schemas import PastedData, ExcelData, ConfigSchema
+
+BASE_DIR = Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).parent.parent
+
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Global state for data and tasks
 _pasted_df: pd.DataFrame | None = None
